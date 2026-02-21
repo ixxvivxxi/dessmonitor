@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { DeviceData } from '../../hooks/use-dess-device';
+import { Typography } from '../ui/typography';
 import { BatteryStatus } from './battery-status';
 import { GridCard } from './grid-card';
 import { LoadCard } from './load-card';
@@ -14,16 +15,16 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
   return (
     <div className="space-y-6">
       <div className="card card-border bg-base-100 p-3 shadow-sm">
-        <p className="text-sm text-base-content/70">
+        <Typography variant="caption" as="p">
           {t('dashboard.workingState')}:{' '}
-          <span className="font-medium text-base-content">
+          <Typography variant="body" as="span" className="font-medium">
             {data.system.workingState
               ? t(`data.system.workingState.${data.system.workingState}`, {
                   defaultValue: data.system.workingState,
                 })
               : '—'}
-          </span>
-        </p>
+          </Typography>
+        </Typography>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

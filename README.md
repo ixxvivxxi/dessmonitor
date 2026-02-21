@@ -22,7 +22,32 @@ npm install
 
 1. Start the server: `npm run dev:server`
 2. Start the app: `npm run dev:app`
-3. Open the app, paste your dessmonitor URL (from DevTools) to save credentials
+3. Configure credentials (see [Auth flow](#auth-flow) below)
+
+## Auth flow
+
+Dessmonitor talks to [dessmonitor.com](https://dessmonitor.com) using a token + secret. The server stores credentials in `data/credentials.json` and uses them for all API requests.
+
+### Option 1: Env vars (recommended)
+
+Set in `.env`:
+
+```
+DESS_USR=user@example.com
+DESS_PWD=your-password
+DESS_COMPANY_KEY=your-company-key
+```
+
+On startup, if no credentials exist, the server logs in via `authSource`, fetches your devices, and stores token + secret. No manual setup needed.
+
+### Option 2: Login API
+
+`POST /credentials/login` with `usr`, `pwd`, `companyKey` (and optionally `baseUrl`, `pn`, `sn`, `devcode`, `devaddr`). The server authenticates with dessmonitor.com, stores credentials, and optionally fetches device list. You can also rely on `DESS_USR`, `DESS_PWD`, `DESS_COMPANY_KEY` from env when the body is empty.
+
+### After auth
+
+- **Reset**: Settings → "Reset credentials" calls `DELETE /credentials` and clears stored credentials. Restart with `.env` configured to reconfigure.
+- **Devices**: Credentials include device params (`pn`, `sn`, `devcode`, `devaddr`) for chart/latest APIs. Devices are fetched on login or via `POST /credentials/devices/refresh`. Change device via Settings.
 
 ## Commands
 

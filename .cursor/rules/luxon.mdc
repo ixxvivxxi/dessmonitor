@@ -1,0 +1,72 @@
+---
+description: Use Luxon for all date/time operations
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Luxon Date/Time
+
+Use **Luxon** (`luxon`) for all date/time handling. Do not use native `Date` for formatting, parsing, or date arithmetic.
+
+## Import
+
+```typescript
+import { DateTime } from 'luxon';
+```
+
+## Common Patterns
+
+**Current time:**
+```typescript
+// ❌ BAD
+const now = new Date();
+
+// ✅ GOOD
+const now = DateTime.now();
+```
+
+**Relative time (subtract hours/days):**
+```typescript
+// ❌ BAD
+new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+// ✅ GOOD
+DateTime.now().minus({ hours: 24 })
+DateTime.now().minus({ days: 1 })
+```
+
+**Format for API/DB (YYYY-MM-DD HH:mm:ss):**
+```typescript
+// ❌ BAD
+const pad = (n) => String(n).padStart(2, '0');
+`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} 00:00:00`
+
+// ✅ GOOD
+DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss')
+DateTime.now().toFormat('yyyy-MM-dd')
+```
+
+**Parse from millis or string:**
+```typescript
+// ❌ BAD
+new Date(ms); new Date(ts).getTime()
+
+// ✅ GOOD
+DateTime.fromMillis(ms)
+DateTime.fromISO(ts).toMillis()
+```
+
+**Start of day / date math:**
+```typescript
+// ❌ BAD
+new Date(y.getFullYear(), y.getMonth(), y.getDate()); d.setDate(d.getDate() - 1)
+
+// ✅ GOOD
+DateTime.local().startOf('day')
+today.minus({ days: 1 })
+```
+
+**Convert to native Date (when calling APIs that expect Date):**
+```typescript
+dateTime.toJSDate()
+```

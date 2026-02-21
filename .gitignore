@@ -25,3 +25,7 @@ dist-ssr
 
 # Server data
 server/data/
+
+# Environment (contains secrets)
+.env
+dessmonitor/

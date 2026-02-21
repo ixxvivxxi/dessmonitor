@@ -1,13 +1,15 @@
-import type { HttpService } from '@nestjs/axios';
+import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { firstValueFrom } from 'rxjs';
-import type { CredentialsService } from '../credentials/credentials.service';
-import type { DatabaseService } from '../db/database.service';
+import { CredentialsService } from '../credentials/credentials.service';
+import { DatabaseService } from '../db/database.service';
 
 // Known chart fields from dessmonitor-homeassistant
 const CHART_FIELDS = [
   'bt_battery_voltage',
   'bt_battery_capacity',
+  'bt_battery_charging_current',
   'pv_output_power',
   'pv_input_voltage',
   'gd_ac_input_voltage',
@@ -60,14 +62,14 @@ export class DessmonitorService {
     private readonly dbService: DatabaseService,
   ) {}
 
-  async fetchLatest(): Promise<boolean> {
-    const url = this.credentialsService.buildUrl('querySPDeviceLastData');
+  async fetchLatest(pn: string): Promise<boolean> {
+    const url = await this.credentialsService.buildUrl('querySPDeviceLastData', undefined, pn);
     if (!url) {
-      this.logger.warn('fetchLatest: no credentials');
+      this.logger.warn('fetchLatest: no credentials or device');
       return false;
     }
     try {
-      this.logger.debug('fetchLatest: fetching');
+      this.logger.debug(`fetchLatest: fetching pn=${pn}`);
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<{ gts: string; pars: LatestDataPars }>>(url),
       );
@@ -76,10 +78,10 @@ export class DessmonitorService {
         return false;
       }
       await this.dbService.run(
-        'INSERT OR REPLACE INTO latest_data (id, json, gts, fetched_at) VALUES (1, ?, ?, ?)',
-        [JSON.stringify(data.dat.pars ?? {}), data.dat.gts ?? '', Math.floor(Date.now() / 1000)],
+        'INSERT OR REPLACE INTO latest_data (pn, json, gts, fetched_at) VALUES (?, ?, ?, ?)',
+        [pn, JSON.stringify(data.dat.pars ?? {}), data.dat.gts ?? '', Math.floor(Date.now() / 1000)],
       );
-      this.logger.log('fetchLatest: OK');
+      this.logger.log(`fetchLatest: OK pn=${pn}`);
       return true;
     } catch (e) {
       this.logger.error(`fetchLatest failed: ${e instanceof Error ? e.message : e}`);
@@ -87,28 +89,38 @@ export class DessmonitorService {
     }
   }
 
-  async fetchChartField(field: string, sdate: string, edate: string): Promise<boolean> {
-    const url = this.credentialsService.buildUrl('queryDeviceChartFieldDetailData', {
-      field,
-      precision: '5',
-      sdate,
-      edate,
-      chartStatus: 'false',
-    });
+  async fetchChartField(pn: string, field: string, sdate: string, edate: string): Promise<boolean> {
+    const url = await this.credentialsService.buildUrl(
+      'queryDeviceChartFieldDetailData',
+      {
+        field,
+        precision: '5',
+        sdate,
+        edate,
+        i18n: 'en_US',
+        chartStatus: 'false',
+      },
+      pn,
+    );
     if (!url) return false;
+    this.logger.debug(`fetchChartField pn=${pn} field=${field}`);
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get<DessmonitorResponse<ChartDataPoint[]>>(url),
+        this.httpService.get<DessmonitorResponse<ChartDataPoint[]>>(url, {
+          timeout: 45000, // chart API can be slow; default 15s often times out
+        }),
       );
       if (data.err !== 0 || !Array.isArray(data.dat)) {
-        this.logger.debug(`fetchChartField ${field}: API error err=${data.err}`);
+        this.logger.debug(
+          `fetchChartField ${field}: API error err=${data.err} desc=${data.desc ?? '(none)'}`,
+        );
         return false;
       }
       await this.dbService.transaction(async () => {
         for (const p of data.dat!) {
           await this.dbService.run(
-            'INSERT OR REPLACE INTO chart_data (field, ts, val) VALUES (?, ?, ?)',
-            [field, p.key, Number.parseFloat(p.val) || 0],
+            'INSERT OR REPLACE INTO chart_data (pn, field, ts, val) VALUES (?, ?, ?, ?)',
+            [pn, field, p.key, Number.parseFloat(p.val) || 0],
           );
         }
       });
@@ -120,12 +132,17 @@ export class DessmonitorService {
     }
   }
 
-  async fetchKeyParameterOneDay(parameter: string, date: string): Promise<boolean> {
-    const url = this.credentialsService.buildUrl('querySPDeviceKeyParameterOneDay', {
-      parameter,
-      date,
-      chartStatus: 'false',
-    });
+  async fetchKeyParameterOneDay(pn: string, parameter: string, date: string): Promise<boolean> {
+    const url = await this.credentialsService.buildUrl(
+      'querySPDeviceKeyParameterOneDay',
+      {
+        parameter,
+        date,
+        i18n: 'en_US',
+        chartStatus: 'false',
+      },
+      pn,
+    );
     if (!url) return false;
     try {
       const { data } = await firstValueFrom(
@@ -141,8 +158,8 @@ export class DessmonitorService {
       await this.dbService.transaction(async () => {
         for (const p of detail) {
           await this.dbService.run(
-            'INSERT OR REPLACE INTO key_param_data (parameter, ts, val) VALUES (?, ?, ?)',
-            [parameter, p.ts, Number.parseFloat(p.val) || 0],
+            'INSERT OR REPLACE INTO key_param_data (pn, parameter, ts, val) VALUES (?, ?, ?, ?)',
+            [pn, parameter, p.ts, Number.parseFloat(p.val) || 0],
           );
         }
       });
@@ -157,31 +174,50 @@ export class DessmonitorService {
   }
 
   /** Fetch chart data for yesterday and today to backfill/keep monthly data current. */
-  async fetchChartDataForRange(startDate: Date, endDate: Date): Promise<void> {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const fmt = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 00:00:00`;
-    const fmtEnd = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 23:59:59`;
-    const sdate = fmt(startDate);
-    const edate = fmtEnd(endDate);
-    this.logger.log(`fetchChartDataForRange: ${sdate} - ${edate}`);
+  async fetchChartDataForRange(pn: string, startDate: Date, endDate: Date): Promise<void> {
+    const sdate = DateTime.fromJSDate(startDate).toFormat('yyyy-MM-dd') + ' 00:00:00';
+    const edate = DateTime.fromJSDate(endDate).toFormat('yyyy-MM-dd') + ' 23:59:59';
+    this.logger.log(`fetchChartDataForRange pn=${pn}: ${sdate} - ${edate}`);
     let ok = 0;
     for (const field of CHART_FIELDS) {
-      if (await this.fetchChartField(field, sdate, edate)) ok++;
+      if (await this.fetchChartField(pn, field, sdate, edate)) ok++;
       await this.sleep(500);
     }
     this.logger.log(`fetchChartDataForRange: ${ok}/${CHART_FIELDS.length} fields OK`);
   }
 
+  /** Fetch battery voltage chart (bt_battery_voltage) for last 2 days and prune older data.
+   * Dessmonitor API expects one day per request (sdate/edate same day). */
+  async fetchBatteryVoltageChart(pn: string): Promise<void> {
+    const now = DateTime.local();
+    const today = now.startOf('day');
+    const yesterday = today.minus({ days: 1 });
+    let ok = 0;
+    for (const day of [yesterday, today]) {
+      const dateStr = day.toFormat('yyyy-MM-dd');
+      const sdate = `${dateStr} 00:00:00`;
+      const edate = `${dateStr} 23:59:59`;
+      this.logger.log(`fetchBatteryVoltageChart pn=${pn}: ${sdate} - ${edate}`);
+      if (await this.fetchChartField(pn, 'bt_battery_voltage', sdate, edate)) ok++;
+      await this.sleep(500);
+    }
+    if (ok > 0) {
+      const cutoff = now.minus({ days: 2 }).startOf('day').toFormat('yyyy-MM-dd HH:mm:ss');
+      await this.dbService.run(
+        "DELETE FROM chart_data WHERE pn = ? AND field = 'bt_battery_voltage' AND ts < ?",
+        [pn, cutoff],
+      );
+      this.logger.debug(`fetchBatteryVoltageChart: pruned rows older than ${cutoff}`);
+    }
+  }
+
   /** Fetch key parameters for a given date. */
-  async fetchKeyParamsForDate(date: Date): Promise<void> {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    this.logger.log(`fetchKeyParamsForDate: ${dateStr}`);
+  async fetchKeyParamsForDate(pn: string, date: Date): Promise<void> {
+    const dateStr = DateTime.fromJSDate(date).toFormat('yyyy-MM-dd');
+    this.logger.log(`fetchKeyParamsForDate pn=${pn}: ${dateStr}`);
     let ok = 0;
     for (const param of KEY_PARAMETERS) {
-      if (await this.fetchKeyParameterOneDay(param, dateStr)) ok++;
+      if (await this.fetchKeyParameterOneDay(pn, param, dateStr)) ok++;
       await this.sleep(500);
     }
     this.logger.log(`fetchKeyParamsForDate: ${ok}/${KEY_PARAMETERS.length} params OK`);

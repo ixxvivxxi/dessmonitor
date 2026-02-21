@@ -2,23 +2,25 @@ export default {
   translation: {
     nav: {
       dashboard: 'Панель',
+      statistics: 'Статистика',
       settings: 'Настройки',
     },
     app: {
       title: 'Dessmonitor',
-      pasteUrlHint:
-        'Вставьте URL dessmonitor из DevTools браузера (вкладка Network, фильтр querySPDeviceLastData или queryDeviceParsEs).',
-      dismiss: 'Закрыть',
-      saveCredentials: 'Сохранить учётные данные',
-      saving: 'Сохранение…',
       resetCredentials: 'Сбросить учётные данные',
       loadingInverterData: 'Загрузка данных инвертора…',
       retry: 'Повторить',
-      urlPlaceholder: 'https://web.dessmonitor.com/public/?sign=...&salt=...&token=...',
+    },
+    settings: {
+      device: 'Устройство',
+      selectDevice: 'Выберите устройство',
+      noDevices: 'Нет устройств',
+      loading: 'Загрузка…',
+      refresh: 'Обновить',
     },
     dashboard: {
       workingState: 'Режим работы',
-      batteryCurrents: 'Токи батареи',
+      batteryCurrents: 'Токи аккумулятора',
       charging: 'Зарядка',
       discharge: 'Разряд',
     },
@@ -48,6 +50,18 @@ export default {
       frequency: 'Частота',
       status: 'Статус',
       sourcePriority: 'Приоритет источника',
+    },
+    statistics: {
+      title: 'Статистика напряжения аккумулятора',
+      last1h: 'Последний час',
+      last6h: 'Последние 6 часов',
+      last12h: 'Последние 12 часов',
+      last24h: 'Последние 24 часа',
+      min: 'Мин',
+      max: 'Макс',
+      delta: 'Размах',
+      change: 'Изменение',
+      noData: 'Нет данных',
     },
     data: {
       grid: {
@@ -92,8 +106,8 @@ export default {
         status: {
           normal: 'Норма',
           fault: 'Ошибка',
-          'Battery Charging': 'Зарядка батареи',
-          'Battery Discharge': 'Разряд батареи',
+          'Battery Charging': 'Зарядка аккумулятора',
+          'Battery Discharge': 'Разряд аккумулятора',
           'Battery Float': 'Плавающая зарядка',
           'Battery Equalizing': 'Выравнивание',
         },

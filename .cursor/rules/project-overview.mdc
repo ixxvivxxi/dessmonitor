@@ -16,7 +16,6 @@ alwaysApply: true
 - `server/` — NestJS backend (src/main.ts)
 
 **Server API**:
-- `GET /credentials?url=...` — save dessmonitor URL with token (url as query param)
 - `GET /credentials/status` — check if credentials are configured
 - `GET /data/latest` — latest device data (pars, gts, fetchedAt)
 - `GET /data/chart?field=&start=&end=` — chart data for a field

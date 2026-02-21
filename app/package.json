@@ -14,6 +14,7 @@
     "@tanstack/react-router": "^1.161.4",
     "i18next": "^25.8.13",
     "lucide-react": "^0.575.0",
+    "luxon": "^3.7.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.5.4",

@@ -151,6 +151,8 @@ interface UseDessDeviceResult extends DeviceData {
 }
 
 export function useDessDevice(options?: {
+  /** Device pn (optional). When omitted, backend uses first device from DB. */
+  pn?: string | null;
   pollIntervalMs?: number;
   enabled?: boolean;
 }): UseDessDeviceResult {
@@ -166,7 +168,10 @@ export function useDessDevice(options?: {
     }
     try {
       setError(null);
-      const res = await fetch(apiUrl('/data/latest'));
+      const params = new URLSearchParams();
+      if (options?.pn) params.set('pn', options.pn);
+      const query = params.toString();
+      const res = await fetch(apiUrl(`/data/latest${query ? `?${query}` : ''}`));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: BackendLatestResponse | null = await res.json();
       if (!json) {
@@ -179,7 +184,7 @@ export function useDessDevice(options?: {
     } finally {
       setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, options?.pn]);
 
   useEffect(() => {
     fetchData();

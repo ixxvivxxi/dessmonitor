@@ -16,6 +16,7 @@ services:
       dockerfile: Dockerfile
       target: server
     restart: always
+    env_file: .env
     volumes:
       - ./server/data:/app/data
     # Internal only; app proxies /api/ to this

@@ -1,9 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { InverterDashboard } from '../components/dashboard/inverter-dashboard';
+import { Typography } from '../components/ui/typography';
 import { useDessDevice } from '../hooks/use-dess-device.ts';
+import { useDevices } from '../hooks/use-devices.ts';
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const { selected } = useDevices();
   const {
     loading: deviceLoading,
     error: deviceError,
@@ -14,6 +17,7 @@ export function DashboardPage() {
     load,
     system,
   } = useDessDevice({
+    pn: selected?.pn,
     pollIntervalMs: 30_000,
     enabled: true,
   });
@@ -23,7 +27,9 @@ export function DashboardPage() {
   return (
     <div>
       {deviceLoading && (
-        <p className="mb-4 text-sm text-base-content/70">{t('app.loadingInverterData')}</p>
+        <Typography variant="caption" className="mb-4">
+          {t('app.loadingInverterData')}
+        </Typography>
       )}
       {deviceError && (
         <div role="alert" className="alert alert-error mb-4">

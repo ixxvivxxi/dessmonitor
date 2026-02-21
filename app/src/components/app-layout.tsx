@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
-import { LayoutDashboard, Settings } from 'lucide-react';
+import { BarChart3, LayoutDashboard, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Container } from './container.tsx';
 import { TopBar } from './top-bar.tsx';
@@ -28,6 +28,16 @@ export function AppLayout({ minimal = false, children }: AppLayoutProps) {
               >
                 <LayoutDashboard className="size-4 shrink-0" />
                 <span className="hidden sm:inline">{t('nav.dashboard')}</span>
+              </Link>
+            )}
+            {pathname !== '/statistics' && (
+              <Link
+                to="/statistics"
+                className="btn btn-ghost btn-sm gap-1.5 data-[status=active]:btn-active"
+                activeProps={{ 'data-status': 'active' }}
+              >
+                <BarChart3 className="size-4 shrink-0" />
+                <span className="hidden sm:inline">{t('nav.statistics')}</span>
               </Link>
             )}
             {pathname !== '/settings' && (

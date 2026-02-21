@@ -1,5 +1,6 @@
 import { Battery } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Typography } from '../ui/typography';
 
 /** Voltage (V) → percentage lookup table (16S Lifepo4 pack), 5% steps. */
 const VOLTAGE_TO_PERCENT: readonly { v: number; pct: number }[] = [
@@ -88,14 +89,12 @@ export function BatteryStatus({
 
   return (
     <div className={`card card-border bg-base-100 p-4 shadow-sm ${cardBg}`}>
-      <h2 className="flex items-center gap-2 text-sm font-medium text-base-content/70">
+      <Typography variant="cardTitle">
         <Battery className="size-4 shrink-0" aria-hidden />
         {t('battery.title')}
-      </h2>
+      </Typography>
       <div className="mt-2 flex items-baseline gap-4">
-        <span className="text-2xl font-semibold tabular-nums text-base-content">
-          {pct != null ? `${pct}%` : '—'}
-        </span>
+        <Typography variant="valueXl">{pct != null ? `${pct}%` : '—'}</Typography>
         {charging && <span className="badge badge-success badge-sm">{t('battery.charging')}</span>}
       </div>
       {pct != null && (
@@ -107,21 +106,29 @@ export function BatteryStatus({
         />
       )}
       <div className="mt-2 text-sm text-base-content/80">
-        <span className="font-medium">{t('battery.voltage')}:</span>{' '}
-        <span className="tabular-nums">{volts != null ? `${volts} V` : t('battery.na')}</span>
+        <Typography variant="label" as="span" className="font-medium">
+          {t('battery.voltage')}:
+        </Typography>{' '}
+        <Typography variant="value" as="span">
+          {volts != null ? `${volts} V` : t('battery.na')}
+        </Typography>
       </div>
       {(chargingCurrent != null || dischargeCurrent != null) && (
         <div className="mt-3 flex flex-wrap gap-6 text-sm">
           {chargingCurrent != null && (
             <span>
               {t('dashboard.charging')}:{' '}
-              <span className="tabular-nums font-medium text-success">{chargingCurrent} A</span>
+              <Typography variant="success" as="span">
+                {chargingCurrent} A
+              </Typography>
             </span>
           )}
           {dischargeCurrent != null && (
             <span>
               {t('dashboard.discharge')}:{' '}
-              <span className="tabular-nums font-medium text-warning">{dischargeCurrent} A</span>
+              <Typography variant="warning" as="span">
+                {dischargeCurrent} A
+              </Typography>
             </span>
           )}
         </div>

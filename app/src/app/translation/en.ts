@@ -2,19 +2,21 @@ export default {
   translation: {
     nav: {
       dashboard: 'Dashboard',
+      statistics: 'Statistics',
       settings: 'Settings',
     },
     app: {
       title: 'Dessmonitor',
-      pasteUrlHint:
-        'Paste the dessmonitor URL from your browser DevTools (Network tab, filter by querySPDeviceLastData or queryDeviceParsEs).',
-      dismiss: 'Dismiss',
-      saveCredentials: 'Save credentials',
-      saving: 'Saving…',
       resetCredentials: 'Reset credentials',
       loadingInverterData: 'Loading inverter data…',
       retry: 'Retry',
-      urlPlaceholder: 'https://web.dessmonitor.com/public/?sign=...&salt=...&token=...',
+    },
+    settings: {
+      device: 'Device',
+      selectDevice: 'Select device',
+      noDevices: 'No devices',
+      loading: 'Loading…',
+      refresh: 'Refresh',
     },
     dashboard: {
       workingState: 'Working state',
@@ -48,6 +50,18 @@ export default {
       frequency: 'Frequency',
       status: 'Status',
       sourcePriority: 'Source priority',
+    },
+    statistics: {
+      title: 'Battery Voltage Statistics',
+      last1h: 'Last 1 hour',
+      last6h: 'Last 6 hours',
+      last12h: 'Last 12 hours',
+      last24h: 'Last 24 hours',
+      min: 'Min',
+      max: 'Max',
+      delta: 'Range',
+      change: 'Change',
+      noData: 'No data',
     },
     data: {
       grid: {

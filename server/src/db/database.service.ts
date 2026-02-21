@@ -23,37 +23,148 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.migrate();
   }
 
-  private migrate(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db?.exec(
-        `
-      CREATE TABLE IF NOT EXISTS latest_data (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
+  private async migrate(): Promise<void> {
+    const run = (sql: string, params: unknown[] = []) =>
+      new Promise<void>((resolve, reject) => {
+        this.db?.run(sql, params, (err) => (err ? reject(err) : resolve()));
+      });
+    const all = <T>(sql: string, params: unknown[] = []) =>
+      new Promise<T[]>((resolve, reject) => {
+        this.db?.all(sql, params, (err, rows) =>
+          err ? reject(err) : resolve((rows ?? []) as T[]),
+        );
+      });
+    const get = <T>(sql: string, params: unknown[] = []) =>
+      new Promise<T | undefined>((resolve, reject) => {
+        this.db?.get(sql, params, (err, row) =>
+          err ? reject(err) : resolve(row as T | undefined),
+        );
+      });
+
+    const hasColumn = async (table: string, col: string): Promise<boolean> => {
+      const rows = await all<{ name: string }>(`PRAGMA table_info(${table})`);
+      return rows.some((r) => r.name === col);
+    };
+    const tableExists = async (name: string): Promise<boolean> => {
+      const row = await get<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        [name],
+      );
+      return !!row;
+    };
+
+    const migrateLatestData = async () => {
+      if (!(await tableExists('latest_data'))) {
+        await run(
+          `CREATE TABLE latest_data (
+            pn TEXT NOT NULL PRIMARY KEY,
+            json TEXT NOT NULL,
+            gts TEXT,
+            fetched_at INTEGER NOT NULL
+          )`,
+        );
+        return;
+      }
+      if (await hasColumn('latest_data', 'pn')) return;
+      await run(`CREATE TABLE latest_data_new (
+        pn TEXT NOT NULL PRIMARY KEY,
         json TEXT NOT NULL,
         gts TEXT,
         fetched_at INTEGER NOT NULL
+      )`);
+      await run(
+        `INSERT INTO latest_data_new (pn, json, gts, fetched_at)
+         SELECT 'default', json, gts, fetched_at FROM latest_data WHERE id = 1`,
       );
-      INSERT OR IGNORE INTO latest_data (id, json, gts, fetched_at) VALUES (1, '{}', '', 0);
+      await run('DROP TABLE latest_data');
+      await run('ALTER TABLE latest_data_new RENAME TO latest_data');
+    };
 
-      CREATE TABLE IF NOT EXISTS chart_data (
+    const migrateChartData = async () => {
+      if (!(await tableExists('chart_data'))) {
+        await run(
+          `CREATE TABLE chart_data (
+            pn TEXT NOT NULL,
+            field TEXT NOT NULL,
+            ts TEXT NOT NULL,
+            val REAL NOT NULL,
+            PRIMARY KEY (pn, field, ts)
+          )`,
+        );
+        await run('CREATE INDEX IF NOT EXISTS idx_chart_pn_field_ts ON chart_data(pn, field, ts)');
+        return;
+      }
+      if (await hasColumn('chart_data', 'pn')) return;
+      await run(`CREATE TABLE chart_data_new (
+        pn TEXT NOT NULL,
         field TEXT NOT NULL,
         ts TEXT NOT NULL,
         val REAL NOT NULL,
-        PRIMARY KEY (field, ts)
+        PRIMARY KEY (pn, field, ts)
+      )`);
+      await run(
+        `INSERT INTO chart_data_new (pn, field, ts, val)
+         SELECT 'default', field, ts, val FROM chart_data`,
       );
-      CREATE INDEX IF NOT EXISTS idx_chart_field_ts ON chart_data(field, ts);
+      await run('DROP TABLE chart_data');
+      await run('ALTER TABLE chart_data_new RENAME TO chart_data');
+      await run('CREATE INDEX IF NOT EXISTS idx_chart_pn_field_ts ON chart_data(pn, field, ts)');
+    };
 
-      CREATE TABLE IF NOT EXISTS key_param_data (
+    const migrateKeyParamData = async () => {
+      if (!(await tableExists('key_param_data'))) {
+        await run(
+          `CREATE TABLE key_param_data (
+            pn TEXT NOT NULL,
+            parameter TEXT NOT NULL,
+            ts TEXT NOT NULL,
+            val REAL NOT NULL,
+            PRIMARY KEY (pn, parameter, ts)
+          )`,
+        );
+        await run(
+          'CREATE INDEX IF NOT EXISTS idx_keyparam_pn_param_ts ON key_param_data(pn, parameter, ts)',
+        );
+        return;
+      }
+      if (await hasColumn('key_param_data', 'pn')) return;
+      await run(`CREATE TABLE key_param_data_new (
+        pn TEXT NOT NULL,
         parameter TEXT NOT NULL,
         ts TEXT NOT NULL,
         val REAL NOT NULL,
-        PRIMARY KEY (parameter, ts)
+        PRIMARY KEY (pn, parameter, ts)
+      )`);
+      await run(
+        `INSERT INTO key_param_data_new (pn, parameter, ts, val)
+         SELECT 'default', parameter, ts, val FROM key_param_data`,
       );
-      CREATE INDEX IF NOT EXISTS idx_keyparam_param_ts ON key_param_data(parameter, ts);
-    `,
-        (err) => (err ? reject(err) : resolve()),
+      await run('DROP TABLE key_param_data');
+      await run('ALTER TABLE key_param_data_new RENAME TO key_param_data');
+      await run(
+        'CREATE INDEX IF NOT EXISTS idx_keyparam_pn_param_ts ON key_param_data(pn, parameter, ts)',
       );
-    });
+    };
+
+    const migrateDevices = async () => {
+      if (await tableExists('devices')) return;
+      await run(
+        `CREATE TABLE devices (
+          pn TEXT NOT NULL,
+          sn TEXT NOT NULL,
+          devcode TEXT NOT NULL,
+          devaddr TEXT NOT NULL,
+          devalias TEXT,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (pn, sn)
+        )`,
+      );
+    };
+
+    await migrateLatestData();
+    await migrateChartData();
+    await migrateKeyParamData();
+    await migrateDevices();
   }
 
   run(sql: string, params: unknown[] = []): Promise<void> {
