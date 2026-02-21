@@ -1,5 +1,5 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import Database from 'better-sqlite3';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import * as sqlite3 from 'sqlite3';
 import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 
@@ -7,23 +7,26 @@ const DATA_DIR = 'data';
 const DB_FILE = 'dessmonitor.db';
 
 @Injectable()
-export class DatabaseService implements OnModuleDestroy {
-  private db: Database.Database | null = null;
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  private db: sqlite3.Database | null = null;
 
-  getDb(): Database.Database {
-    if (!this.db) {
-      const dir = join(process.cwd(), DATA_DIR);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      const path = join(dir, DB_FILE);
-      this.db = new Database(path);
-      this.migrate();
-    }
-    return this.db;
+  async onModuleInit(): Promise<void> {
+    const dir = join(process.cwd(), DATA_DIR);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const path = join(dir, DB_FILE);
+    await new Promise<void>((resolve, reject) => {
+      this.db = new sqlite3.Database(path, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    await this.migrate();
   }
 
-  private migrate(): void {
-    const db = this.db!;
-    db.exec(`
+  private migrate(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db!.exec(
+        `
       CREATE TABLE IF NOT EXISTS latest_data (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         json TEXT NOT NULL,
@@ -47,7 +50,49 @@ export class DatabaseService implements OnModuleDestroy {
         PRIMARY KEY (parameter, ts)
       );
       CREATE INDEX IF NOT EXISTS idx_keyparam_param_ts ON key_param_data(parameter, ts);
-    `);
+    `,
+        (err) => (err ? reject(err) : resolve()),
+      );
+    });
+  }
+
+  run(sql: string, params: unknown[] = []): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db!.run(sql, params, (err) => (err ? reject(err) : resolve()));
+    });
+  }
+
+  get<T = Record<string, unknown>>(
+    sql: string,
+    params: unknown[] = [],
+  ): Promise<T | undefined> {
+    return new Promise((resolve, reject) => {
+      this.db!.get(sql, params, (err, row) =>
+        err ? reject(err) : resolve(row as T | undefined),
+      );
+    });
+  }
+
+  all<T = Record<string, unknown>>(
+    sql: string,
+    params: unknown[] = [],
+  ): Promise<T[]> {
+    return new Promise((resolve, reject) => {
+      this.db!.all(sql, params, (err, rows) =>
+        err ? reject(err) : resolve((rows ?? []) as T[]),
+      );
+    });
+  }
+
+  async transaction(fn: () => Promise<void>): Promise<void> {
+    await this.run('BEGIN');
+    try {
+      await fn();
+      await this.run('COMMIT');
+    } catch (e) {
+      await this.run('ROLLBACK');
+      throw e;
+    }
   }
 
   onModuleDestroy(): void {

@@ -5,15 +5,16 @@ import { DatabaseService } from '../db/database.service';
 export class DataService {
   constructor(private readonly dbService: DatabaseService) {}
 
-  getLatest(): {
+  async getLatest(): Promise<{
     pars: Record<string, unknown>;
     gts: string;
     fetchedAt: number;
-  } | null {
-    const db = this.dbService.getDb();
-    const row = db
-      .prepare('SELECT json, gts, fetched_at FROM latest_data WHERE id = 1')
-      .get() as { json: string; gts: string; fetched_at: number } | undefined;
+  } | null> {
+    const row = await this.dbService.get<{
+      json: string;
+      gts: string;
+      fetched_at: number;
+    }>('SELECT json, gts, fetched_at FROM latest_data WHERE id = 1');
     if (!row) return null;
     try {
       const pars = JSON.parse(row.json) as Record<string, unknown>;
@@ -27,31 +28,25 @@ export class DataService {
     }
   }
 
-  getChartData(
+  async getChartData(
     field: string,
     start: string,
     end: string,
-  ): Array<{ ts: string; val: number }> {
-    const db = this.dbService.getDb();
-    const rows = db
-      .prepare(
-        'SELECT ts, val FROM chart_data WHERE field = ? AND ts >= ? AND ts <= ? ORDER BY ts',
-      )
-      .all(field, start, end) as Array<{ ts: string; val: number }>;
-    return rows;
+  ): Promise<Array<{ ts: string; val: number }>> {
+    return this.dbService.all<{ ts: string; val: number }>(
+      'SELECT ts, val FROM chart_data WHERE field = ? AND ts >= ? AND ts <= ? ORDER BY ts',
+      [field, start, end],
+    );
   }
 
-  getKeyParamData(
+  async getKeyParamData(
     parameter: string,
     start: string,
     end: string,
-  ): Array<{ ts: string; val: number }> {
-    const db = this.dbService.getDb();
-    const rows = db
-      .prepare(
-        'SELECT ts, val FROM key_param_data WHERE parameter = ? AND ts >= ? AND ts <= ? ORDER BY ts',
-      )
-      .all(parameter, start, end) as Array<{ ts: string; val: number }>;
-    return rows;
+  ): Promise<Array<{ ts: string; val: number }>> {
+    return this.dbService.all<{ ts: string; val: number }>(
+      'SELECT ts, val FROM key_param_data WHERE parameter = ? AND ts >= ? AND ts <= ? ORDER BY ts',
+      [parameter, start, end],
+    );
   }
 }

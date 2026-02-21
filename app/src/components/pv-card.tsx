@@ -21,7 +21,12 @@ export function PvCard({ voltage, power, status }: PvCardProps) {
           valueClassName="text-warning"
         />
         <CardRow label={t('pv.voltage')} value={voltage != null ? `${voltage} V` : '—'} />
-        {status && <CardRow label={t('pv.status')} value={status} />}
+        {status && (
+          <CardRow
+            label={t('pv.status')}
+            value={t(`data.pv.status.${status}`, { defaultValue: status })}
+          />
+        )}
       </CardBody>
     </Card>
   )

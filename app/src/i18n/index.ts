@@ -66,6 +66,52 @@ const resources = {
         status: 'Status',
         sourcePriority: 'Source priority',
       },
+      data: {
+        grid: {
+          status: {
+            normal: 'Normal',
+            fault: 'Fault',
+            'Mains OK': 'Mains OK',
+          },
+          inputRange: {
+            APL: 'APL (90–280 V)',
+            UPS: 'UPS (170–280 V)',
+          },
+        },
+        pv: {
+          status: {
+            normal: 'Normal',
+            fault: 'Fault',
+            'PV Undervoltage': 'PV Undervoltage',
+          },
+        },
+        load: {
+          status: {
+            normal: 'Normal',
+            fault: 'Fault',
+            Appliance: 'Appliance',
+            'Load On (Normal)': 'Load On (Normal)',
+          },
+          sourcePriority: {
+            'Grid first': 'Grid first',
+            'Solar first': 'Solar first',
+            'Solar+Grid': 'Solar+Grid',
+            'Solar only': 'Solar only',
+            'Grid only': 'Grid only',
+          },
+        },
+        battery: { status: { normal: 'Normal', fault: 'Fault' } },
+        system: {
+          workingState: {
+            Normal: 'Normal',
+            Charge: 'Charging',
+            Discharge: 'Discharging',
+            Fault: 'Fault',
+            Idle: 'Idle',
+            Appliance: 'Appliance',
+          },
+        },
+      },
     },
   },
   ru: {
@@ -119,6 +165,52 @@ const resources = {
         frequency: 'Частота',
         status: 'Статус',
         sourcePriority: 'Приоритет источника',
+      },
+      data: {
+        grid: {
+          status: {
+            normal: 'Норма',
+            fault: 'Ошибка',
+            'Mains OK': 'Сеть OK',
+          },
+          inputRange: {
+            APL: 'APL (90–280 В)',
+            UPS: 'UPS (170–280 В)',
+          },
+        },
+        pv: {
+          status: {
+            normal: 'Норма',
+            fault: 'Ошибка',
+            'PV Undervoltage': 'PV пониженное напряжение',
+          },
+        },
+        load: {
+          status: {
+            normal: 'Норма',
+            fault: 'Ошибка',
+            Appliance: 'Потребление',
+            'Load On (Normal)': 'Нагрузка (норма)',
+          },
+          sourcePriority: {
+            'Grid first': 'Сеть первая',
+            'Solar first': 'Солнце первое',
+            'Solar+Grid': 'Солнце+сеть',
+            'Solar only': 'Только солнце',
+            'Grid only': 'Только сеть',
+          },
+        },
+        battery: { status: { normal: 'Норма', fault: 'Ошибка' } },
+        system: {
+          workingState: {
+            Normal: 'Норма',
+            Charge: 'Зарядка',
+            Discharge: 'Разряд',
+            Fault: 'Ошибка',
+            Idle: 'Ожидание',
+            Appliance: 'Потребление',
+          },
+        },
       },
     },
   },

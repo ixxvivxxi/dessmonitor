@@ -79,14 +79,13 @@ export class DessmonitorService {
         );
         return false;
       }
-      const db = this.dbService.getDb();
-      const stmt = db.prepare(
+      await this.dbService.run(
         'INSERT OR REPLACE INTO latest_data (id, json, gts, fetched_at) VALUES (1, ?, ?, ?)',
-      );
-      stmt.run(
-        JSON.stringify(data.dat.pars ?? {}),
-        data.dat.gts ?? '',
-        Math.floor(Date.now() / 1000),
+        [
+          JSON.stringify(data.dat.pars ?? {}),
+          data.dat.gts ?? '',
+          Math.floor(Date.now() / 1000),
+        ],
       );
       this.logger.log('fetchLatest: OK');
       return true;
@@ -124,16 +123,14 @@ export class DessmonitorService {
         );
         return false;
       }
-      const db = this.dbService.getDb();
-      const insert = db.prepare(
-        'INSERT OR REPLACE INTO chart_data (field, ts, val) VALUES (?, ?, ?)',
-      );
-      const tx = db.transaction(() => {
+      await this.dbService.transaction(async () => {
         for (const p of data.dat!) {
-          insert.run(field, p.key, parseFloat(p.val) || 0);
+          await this.dbService.run(
+            'INSERT OR REPLACE INTO chart_data (field, ts, val) VALUES (?, ?, ?)',
+            [field, p.key, parseFloat(p.val) || 0],
+          );
         }
       });
-      tx();
       this.logger.debug(`fetchChartField ${field}: ${data.dat.length} points`);
       return true;
     } catch (e) {
@@ -170,16 +167,14 @@ export class DessmonitorService {
         );
         return false;
       }
-      const db = this.dbService.getDb();
-      const insert = db.prepare(
-        'INSERT OR REPLACE INTO key_param_data (parameter, ts, val) VALUES (?, ?, ?)',
-      );
-      const tx = db.transaction(() => {
+      await this.dbService.transaction(async () => {
         for (const p of detail) {
-          insert.run(parameter, p.ts, parseFloat(p.val) || 0);
+          await this.dbService.run(
+            'INSERT OR REPLACE INTO key_param_data (parameter, ts, val) VALUES (?, ?, ?)',
+            [parameter, p.ts, parseFloat(p.val) || 0],
+          );
         }
       });
-      tx();
       this.logger.debug(
         `fetchKeyParameterOneDay ${parameter} ${date}: ${detail.length} points`,
       );

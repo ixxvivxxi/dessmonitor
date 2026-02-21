@@ -19,8 +19,20 @@ export function LoadCard({ voltage, power, frequency, status, sourcePriority }: 
         <CardRow label={t('load.power')} value={power != null ? `${power} W` : '—'} primary />
         <CardRow label={t('load.voltage')} value={voltage != null ? `${voltage} V` : '—'} />
         <CardRow label={t('load.frequency')} value={frequency != null ? `${frequency} Hz` : '—'} />
-        {status && <CardRow label={t('load.status')} value={status} />}
-        {sourcePriority && <CardRow label={t('load.sourcePriority')} value={sourcePriority} />}
+        {status && (
+          <CardRow
+            label={t('load.status')}
+            value={t(`data.load.status.${status}`, { defaultValue: status })}
+          />
+        )}
+        {sourcePriority && (
+          <CardRow
+            label={t('load.sourcePriority')}
+            value={t(`data.load.sourcePriority.${sourcePriority}`, {
+              defaultValue: sourcePriority,
+            })}
+          />
+        )}
       </CardBody>
     </Card>
   )

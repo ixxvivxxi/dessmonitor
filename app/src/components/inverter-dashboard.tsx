@@ -17,7 +17,11 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
         <p className="text-sm text-base-content/70">
           {t('dashboard.workingState')}:{' '}
           <span className="font-medium text-base-content">
-            {data.system.workingState ?? '—'}
+            {data.system.workingState
+              ? t(`data.system.workingState.${data.system.workingState}`, {
+                  defaultValue: data.system.workingState,
+                })
+              : '—'}
           </span>
         </p>
       </div>
