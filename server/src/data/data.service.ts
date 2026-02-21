@@ -26,6 +26,23 @@ export class DataService {
         'SELECT json, gts, fetched_at FROM latest_data ORDER BY fetched_at DESC LIMIT 1',
       );
     }
+    if (!row && pn?.trim()) {
+      const ok = await this.dessmonitorService.fetchLatest(pn.trim());
+      if (ok) {
+        const r = await this.dbService.get<{ json: string; gts: string; fetched_at: number }>(
+          'SELECT json, gts, fetched_at FROM latest_data WHERE pn = ?',
+          [pn.trim()],
+        );
+        if (r) {
+          try {
+            const pars = JSON.parse(r.json) as Record<string, unknown>;
+            return { pars, gts: r.gts ?? '', fetchedAt: r.fetched_at ?? 0 };
+          } catch {
+            /* fall through to null */
+          }
+        }
+      }
+    }
     if (!row) return null;
     try {
       const pars = JSON.parse(row.json) as Record<string, unknown>;

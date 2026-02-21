@@ -63,7 +63,11 @@ export class DessmonitorService {
   ) {}
 
   async fetchLatest(pn: string): Promise<boolean> {
-    const url = await this.credentialsService.buildUrl('querySPDeviceLastData', undefined, pn);
+    const url = await this.credentialsService.buildUrl(
+      'querySPDeviceLastData',
+      { i18n: 'en_US' },
+      pn,
+    );
     if (!url) {
       this.logger.warn('fetchLatest: no credentials or device');
       return false;
