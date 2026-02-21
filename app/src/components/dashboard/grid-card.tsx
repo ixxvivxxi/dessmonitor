@@ -1,6 +1,6 @@
 import { Zap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, CardBody, CardHeader, CardRow } from './card'
+import { Card, CardBody, CardHeader, CardRow } from '../ui/card'
 
 interface GridCardProps {
   voltage: number | null

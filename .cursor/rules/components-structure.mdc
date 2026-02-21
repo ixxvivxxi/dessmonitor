@@ -1,0 +1,19 @@
+---
+description: Component organization and folder structure
+globs: app/src/components/**/*
+alwaysApply: true
+---
+
+# Component Structure
+
+**Where to put components:**
+
+- **`components/ui/`** — Reusable UI primitives (Card, CardHeader, CardRow, buttons, etc.). Shared building blocks.
+- **`components/<feature>/`** — Feature-specific components grouped by domain (e.g. `dashboard/`, `setup/`). Keep related components together.
+- **`components/` root** — App shell, layout, and top-level screens (app-layout, top-bar, container, setup-screen, language-chooser).
+
+**Rules:**
+- New feature-specific components → add to `components/<feature>/` or create a new feature folder.
+- New reusable primitives → add to `components/ui/`.
+- Colocate: place components in the deepest folder that makes sense; avoid flat component roots.
+- Imports: `../ui/card` from feature folders; `../../hooks/...` when crossing feature boundaries.

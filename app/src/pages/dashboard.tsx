@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { InverterDashboard } from '../components/inverter-dashboard.tsx'
+import { InverterDashboard } from '../components/dashboard/inverter-dashboard'
 import { useDessDevice } from '../hooks/use-dess-device.ts'
 
 export function DashboardPage() {

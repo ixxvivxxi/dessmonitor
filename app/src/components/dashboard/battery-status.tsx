@@ -47,17 +47,23 @@ interface BatteryStatusProps {
   voltage?: number
   /** Battery SOC % from API (e.g. bt_battery_capacity). Takes precedence over voltage-derived value. */
   capacity?: number
+  /** Charging current in A. */
+  chargingCurrent?: number | null
+  /** Discharge current in A. */
+  dischargeCurrent?: number | null
 }
 
 function getProgressColor(pct: number): string {
-  if (pct <= 20) return 'progress-error'
-  if (pct <= 50) return 'progress-warning'
+  if (pct <= 10) return 'progress-error'
+  if (pct <= 30) return 'progress-warning'
+  if (pct <= 60) return 'progress-info'
   return 'progress-success'
 }
 
 function getCardBg(pct: number): string {
-  if (pct <= 20) return 'bg-error/10'
-  if (pct <= 50) return 'bg-warning/10'
+  if (pct <= 10) return 'bg-error/10'
+  if (pct <= 30) return 'bg-warning/10'
+  if (pct <= 60) return 'bg-info/10'
   return 'bg-success/10'
 }
 
@@ -65,6 +71,8 @@ export function BatteryStatus({
   charging,
   voltage,
   capacity,
+  chargingCurrent,
+  dischargeCurrent,
 }: BatteryStatusProps) {
   const { t } = useTranslation()
   const pct =
@@ -106,6 +114,26 @@ export function BatteryStatus({
           {volts != null ? `${volts} V` : t('battery.na')}
         </span>
       </div>
+      {(chargingCurrent != null || dischargeCurrent != null) && (
+        <div className="mt-3 flex flex-wrap gap-6 text-sm">
+          {chargingCurrent != null && (
+            <span>
+              {t('dashboard.charging')}:{' '}
+              <span className="tabular-nums font-medium text-success">
+                {chargingCurrent} A
+              </span>
+            </span>
+          )}
+          {dischargeCurrent != null && (
+            <span>
+              {t('dashboard.discharge')}:{' '}
+              <span className="tabular-nums font-medium text-warning">
+                {dischargeCurrent} A
+              </span>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

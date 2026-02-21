@@ -1,6 +1,6 @@
 import { Plug } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, CardBody, CardHeader, CardRow } from './card'
+import { Card, CardBody, CardHeader, CardRow } from '../ui/card'
 
 interface LoadCardProps {
   voltage: number | null

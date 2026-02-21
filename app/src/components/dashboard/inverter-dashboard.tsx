@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { BatteryStatus } from './battery-status.tsx'
-import { GridCard } from './grid-card.tsx'
-import { LoadCard } from './load-card.tsx'
-import { PvCard } from './pv-card.tsx'
-import type { DeviceData } from '../hooks/use-dess-device.ts'
+import { BatteryStatus } from './battery-status'
+import { GridCard } from './grid-card'
+import { LoadCard } from './load-card'
+import { PvCard } from './pv-card'
+import type { DeviceData } from '../../hooks/use-dess-device'
 
 interface InverterDashboardProps {
   data: DeviceData
@@ -36,6 +36,8 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
           voltage={data.battery.voltage ?? undefined}
           capacity={data.battery.capacity ?? undefined}
           charging={data.battery.charging}
+          chargingCurrent={data.battery.chargingCurrent}
+          dischargeCurrent={data.battery.dischargeCurrent}
         />
         <LoadCard
           voltage={data.load.voltage}
@@ -51,32 +53,6 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
           inputRange={data.grid.inputRange}
         />
       </div>
-
-      {(data.battery.chargingCurrent != null || data.battery.dischargeCurrent != null) && (
-        <div className="card card-border bg-base-100 p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-base-content/70">
-            {t('dashboard.batteryCurrents')}
-          </h3>
-          <div className="mt-2 flex flex-wrap gap-6 text-sm">
-            {data.battery.chargingCurrent != null && (
-              <span>
-                {t('dashboard.charging')}:{' '}
-                <span className="tabular-nums font-medium text-success">
-                  {data.battery.chargingCurrent} A
-                </span>
-              </span>
-            )}
-            {data.battery.dischargeCurrent != null && (
-              <span>
-                {t('dashboard.discharge')}:{' '}
-                <span className="tabular-nums font-medium text-warning">
-                  {data.battery.dischargeCurrent} A
-                </span>
-              </span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
