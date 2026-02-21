@@ -1,0 +1,37 @@
+---
+description: Core project context and conventions
+alwaysApply: true
+---
+
+# Dessmonitor Project Overview
+
+**Monorepo**: `app` (React + Vite) + `server` (NestJS)
+
+**Stack**:
+- app: React 19, Vite 7, TypeScript 5.9, Tailwind CSS v4
+- server: NestJS
+
+**Structure**:
+- `app/` — frontend (index.html, vite.config.ts, src/)
+- `server/` — NestJS backend (src/main.ts)
+
+**Server API**:
+- `GET /credentials?url=...` — save dessmonitor URL with token (url as query param)
+- `GET /credentials/status` — check if credentials are configured
+- `GET /data/latest` — latest device data (pars, gts, fetchedAt)
+- `GET /data/chart?field=&start=&end=` — chart data for a field
+- `GET /data/key-param?parameter=&start=&end=` — key parameter time series
+
+**Commands**:
+- `npm run dev` / `npm run dev:app` — start frontend dev server
+- `npm run dev:server` — start NestJS in watch mode
+- `npm run build` / `npm run build:app` — build frontend
+- `npm run build:server` — build server
+- `npm run lint` — lint all workspaces
+
+**Conventions**:
+- **File names**: use kebab-case (e.g. `battery-status.tsx`, `use-battery.ts`)
+- Use functional components and hooks
+- Prefer named exports for utilities; default export for page/route components
+- Use Tailwind utility classes for styling (no inline styles unless necessary)
+- Strict TypeScript — enable `noUnusedLocals`, `noUnusedParameters`

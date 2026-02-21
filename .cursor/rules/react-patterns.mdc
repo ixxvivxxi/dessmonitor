@@ -1,0 +1,30 @@
+---
+description: React component patterns and conventions
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# React Patterns
+
+- Use **functional components** only (no class components)
+- Extract reusable logic into **custom hooks** (e.g. `useFetch`, `useLocalStorage`)
+- Keep components small and focused; split large components into smaller ones
+- Use `StrictMode` in the root (already in `main.tsx`)
+
+**Props**:
+```tsx
+// ✅ Prefer explicit props interface
+interface ButtonProps {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}
+
+function Button({ label, onClick, disabled = false }: ButtonProps) {
+  return <button onClick={onClick} disabled={disabled}>{label}</button>
+}
+```
+
+**Exports**:
+- Default export for page-level / route components
+- Named exports for reusable components and hooks

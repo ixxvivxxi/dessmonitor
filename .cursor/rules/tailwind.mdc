@@ -1,0 +1,13 @@
+---
+description: Tailwind CSS v4 usage
+globs: "**/*.css"
+alwaysApply: false
+---
+
+# Tailwind CSS v4
+
+- Entry point: `src/app/index.css` with `@import "tailwindcss"`
+- Uses `@tailwindcss/vite` plugin; no separate `tailwind.config.js` by default
+- Prefer utility classes over custom CSS
+- Use `@layer` for custom utilities/components if needed
+- Add theme extensions via `@theme` in CSS when customizing

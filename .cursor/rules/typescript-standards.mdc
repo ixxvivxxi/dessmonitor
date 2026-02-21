@@ -1,0 +1,31 @@
+---
+description: TypeScript conventions
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+Project uses strict mode, `verbatimModuleSyntax`, and strict lint options. Avoid `any`.
+
+**Imports**:
+- Use `type` for type-only imports: `import type { Props } from './types'`
+- Use `import type` when importing only types (required with `verbatimModuleSyntax`)
+
+**Error handling**:
+```typescript
+// ❌ BAD
+try { await fetchData() } catch (e) {}
+
+// ✅ GOOD
+try {
+  await fetchData()
+} catch (e) {
+  console.error('Fetch failed', e)
+  throw e
+}
+```
+
+**DOM**:
+- Non-null assertions for guaranteed elements: `document.getElementById('root')!`
+- Prefer typed event handlers: `(e: React.ChangeEvent<HTMLInputElement>) => ...`
