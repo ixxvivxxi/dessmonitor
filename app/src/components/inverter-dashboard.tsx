@@ -37,18 +37,18 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
           capacity={data.battery.capacity ?? undefined}
           charging={data.battery.charging}
         />
-        <GridCard
-          voltage={data.grid.voltage}
-          frequency={data.grid.frequency}
-          status={data.grid.status}
-          inputRange={data.grid.inputRange}
-        />
         <LoadCard
           voltage={data.load.voltage}
           power={data.load.power}
           frequency={data.load.frequency}
           status={data.load.status}
           sourcePriority={data.load.sourcePriority}
+        />
+        <GridCard
+          voltage={data.grid.voltage}
+          frequency={data.grid.frequency}
+          status={data.grid.status}
+          inputRange={data.grid.inputRange}
         />
       </div>
 
