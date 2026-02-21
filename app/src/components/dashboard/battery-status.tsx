@@ -1,5 +1,5 @@
-import { Battery } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { Battery } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /** Voltage (V) → percentage lookup table (16S Lifepo4 pack), 5% steps. */
 const VOLTAGE_TO_PERCENT: readonly { v: number; pct: number }[] = [
@@ -24,47 +24,47 @@ const VOLTAGE_TO_PERCENT: readonly { v: number; pct: number }[] = [
   { v: 53.6, pct: 90 },
   { v: 56, pct: 95 },
   { v: 58, pct: 100 },
-]
+];
 
 function voltageToPercent(voltage: number): number {
-  if (voltage <= VOLTAGE_TO_PERCENT[0].v) return 0
-  if (voltage >= VOLTAGE_TO_PERCENT[VOLTAGE_TO_PERCENT.length - 1].v) return 100
+  if (voltage <= VOLTAGE_TO_PERCENT[0].v) return 0;
+  if (voltage >= VOLTAGE_TO_PERCENT[VOLTAGE_TO_PERCENT.length - 1].v) return 100;
   for (let i = 0; i < VOLTAGE_TO_PERCENT.length - 1; i++) {
-    const lo = VOLTAGE_TO_PERCENT[i]
-    const hi = VOLTAGE_TO_PERCENT[i + 1]
+    const lo = VOLTAGE_TO_PERCENT[i];
+    const hi = VOLTAGE_TO_PERCENT[i + 1];
     if (voltage >= lo.v && voltage <= hi.v) {
-      const t = (voltage - lo.v) / (hi.v - lo.v)
-      return Math.round(lo.pct + t * (hi.pct - lo.pct))
+      const t = (voltage - lo.v) / (hi.v - lo.v);
+      return Math.round(lo.pct + t * (hi.pct - lo.pct));
     }
   }
-  return 0
+  return 0;
 }
 
 interface BatteryStatusProps {
   /** Whether battery is charging. */
-  charging?: boolean
+  charging?: boolean;
   /** Voltage in volts (e.g. 52.8). Used to compute percentage via lookup table when capacity is not provided. */
-  voltage?: number
+  voltage?: number;
   /** Battery SOC % from API (e.g. bt_battery_capacity). Takes precedence over voltage-derived value. */
-  capacity?: number
+  capacity?: number;
   /** Charging current in A. */
-  chargingCurrent?: number | null
+  chargingCurrent?: number | null;
   /** Discharge current in A. */
-  dischargeCurrent?: number | null
+  dischargeCurrent?: number | null;
 }
 
 function getProgressColor(pct: number): string {
-  if (pct <= 10) return 'progress-error'
-  if (pct <= 30) return 'progress-warning'
-  if (pct <= 60) return 'progress-info'
-  return 'progress-success'
+  if (pct <= 10) return 'progress-error';
+  if (pct <= 30) return 'progress-warning';
+  if (pct <= 60) return 'progress-info';
+  return 'progress-success';
 }
 
 function getCardBg(pct: number): string {
-  if (pct <= 10) return 'bg-error/10'
-  if (pct <= 30) return 'bg-warning/10'
-  if (pct <= 60) return 'bg-info/10'
-  return 'bg-success/10'
+  if (pct <= 10) return 'bg-error/10';
+  if (pct <= 30) return 'bg-warning/10';
+  if (pct <= 60) return 'bg-info/10';
+  return 'bg-success/10';
 }
 
 export function BatteryStatus({
@@ -74,17 +74,17 @@ export function BatteryStatus({
   chargingCurrent,
   dischargeCurrent,
 }: BatteryStatusProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const pct =
     capacity != null
       ? Math.round(capacity)
       : voltage != null
         ? voltageToPercent(voltage)
-        : undefined
-  const volts = voltage != null ? voltage.toFixed(2) : null
-  const fill = pct ?? 0
-  const progressColor = getProgressColor(fill)
-  const cardBg = pct != null ? getCardBg(pct) : ''
+        : undefined;
+  const volts = voltage != null ? voltage.toFixed(2) : null;
+  const fill = pct ?? 0;
+  const progressColor = getProgressColor(fill);
+  const cardBg = pct != null ? getCardBg(pct) : '';
 
   return (
     <div className={`card card-border bg-base-100 p-4 shadow-sm ${cardBg}`}>
@@ -96,9 +96,7 @@ export function BatteryStatus({
         <span className="text-2xl font-semibold tabular-nums text-base-content">
           {pct != null ? `${pct}%` : '—'}
         </span>
-        {charging && (
-          <span className="badge badge-success badge-sm">{t('battery.charging')}</span>
-        )}
+        {charging && <span className="badge badge-success badge-sm">{t('battery.charging')}</span>}
       </div>
       {pct != null && (
         <progress
@@ -110,30 +108,24 @@ export function BatteryStatus({
       )}
       <div className="mt-2 text-sm text-base-content/80">
         <span className="font-medium">{t('battery.voltage')}:</span>{' '}
-        <span className="tabular-nums">
-          {volts != null ? `${volts} V` : t('battery.na')}
-        </span>
+        <span className="tabular-nums">{volts != null ? `${volts} V` : t('battery.na')}</span>
       </div>
       {(chargingCurrent != null || dischargeCurrent != null) && (
         <div className="mt-3 flex flex-wrap gap-6 text-sm">
           {chargingCurrent != null && (
             <span>
               {t('dashboard.charging')}:{' '}
-              <span className="tabular-nums font-medium text-success">
-                {chargingCurrent} A
-              </span>
+              <span className="tabular-nums font-medium text-success">{chargingCurrent} A</span>
             </span>
           )}
           {dischargeCurrent != null && (
             <span>
               {t('dashboard.discharge')}:{' '}
-              <span className="tabular-nums font-medium text-warning">
-                {dischargeCurrent} A
-              </span>
+              <span className="tabular-nums font-medium text-warning">{dischargeCurrent} A</span>
             </span>
           )}
         </div>
       )}
     </div>
-  )
+  );
 }

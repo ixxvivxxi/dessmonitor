@@ -1,15 +1,15 @@
-import { Sun } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { Card, CardBody, CardHeader, CardRow } from '../ui/card'
+import { Sun } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardBody, CardHeader, CardRow } from '../ui/card';
 
 interface PvCardProps {
-  voltage: number | null
-  power: number | null
-  status?: string | null
+  voltage: number | null;
+  power: number | null;
+  status?: string | null;
 }
 
 export function PvCard({ voltage, power, status }: PvCardProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader icon={<Sun className="size-4 shrink-0" aria-hidden />} title={t('pv.title')} />
@@ -29,5 +29,5 @@ export function PvCard({ voltage, power, status }: PvCardProps) {
         )}
       </CardBody>
     </Card>
-  )
+  );
 }

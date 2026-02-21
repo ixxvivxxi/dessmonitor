@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Query } from '@nestjs/common';
-import { CredentialsService } from './credentials.service';
+import type { CredentialsService } from './credentials.service';
 
 @Controller('credentials')
 export class CredentialsController {
@@ -7,10 +7,9 @@ export class CredentialsController {
 
   @Get()
   saveCredentials(@Query() query: Record<string, string>) {
-    const url = query['url'];
+    const url = query.url;
     const hasUrl = url && typeof url === 'string';
-    const hasParams =
-      query['sign'] || query['token'] || query['pn'] || query['sn'];
+    const hasParams = query.sign || query.token || query.pn || query.sn;
     if (!hasUrl && !hasParams) {
       return {
         ok: false,

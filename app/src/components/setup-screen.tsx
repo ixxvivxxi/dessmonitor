@@ -1,24 +1,19 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { AppLayout } from './app-layout.tsx'
-import { useDessAuth } from '../hooks/use-dess-auth.ts'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useDessAuth } from '../hooks/use-dess-auth.ts';
+import { AppLayout } from './app-layout.tsx';
 
 export function SetupScreen() {
-  const { t } = useTranslation()
-  const {
-    loading: authLoading,
-    error: authError,
-    saveCredentials,
-    clearError,
-  } = useDessAuth()
-  const [urlInput, setUrlInput] = useState('')
+  const { t } = useTranslation();
+  const { loading: authLoading, error: authError, saveCredentials, clearError } = useDessAuth();
+  const [urlInput, setUrlInput] = useState('');
 
   const handleSave = async () => {
-    const trimmed = urlInput.trim()
-    if (!trimmed) return
-    await saveCredentials(trimmed)
-    setUrlInput('')
-  }
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    await saveCredentials(trimmed);
+    setUrlInput('');
+  };
 
   return (
     <AppLayout minimal>
@@ -28,11 +23,7 @@ export function SetupScreen() {
             {authError && (
               <div className="alert alert-error mb-4" role="alert">
                 <span>{authError}</span>
-                <button
-                  type="button"
-                  onClick={clearError}
-                  className="btn btn-ghost btn-sm"
-                >
+                <button type="button" onClick={clearError} className="btn btn-ghost btn-sm">
                   {t('app.dismiss')}
                 </button>
               </div>
@@ -52,9 +43,7 @@ export function SetupScreen() {
                 onClick={handleSave}
                 className="btn btn-primary btn-sm mt-3"
               >
-                {authLoading && (
-                  <span className="loading loading-spinner loading-sm" />
-                )}
+                {authLoading && <span className="loading loading-spinner loading-sm" />}
                 {authLoading ? t('app.saving') : t('app.saveCredentials')}
               </button>
             </fieldset>
@@ -62,5 +51,5 @@ export function SetupScreen() {
         </div>
       </div>
     </AppLayout>
-  )
+  );
 }

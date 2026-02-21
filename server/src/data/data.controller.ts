@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { DataService } from './data.service';
+import type { DataService } from './data.service';
 
 @Controller('data')
 export class DataController {

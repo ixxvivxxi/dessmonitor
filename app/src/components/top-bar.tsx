@@ -1,14 +1,14 @@
-import { useTranslation } from 'react-i18next'
-import { Container } from './container.tsx'
-import { LanguageChooser } from './language-chooser.tsx'
+import { useTranslation } from 'react-i18next';
+import { Container } from './container.tsx';
+import { LanguageChooser } from './language-chooser.tsx';
 
 interface TopBarProps {
   /** Optional content to render between the title and language chooser */
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }
 
 export function TopBar({ children }: TopBarProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <header className="border-b border-base-300 bg-base-100">
@@ -22,5 +22,5 @@ export function TopBar({ children }: TopBarProps) {
         </div>
       </Container>
     </header>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next'
-import { InverterDashboard } from '../components/dashboard/inverter-dashboard'
-import { useDessDevice } from '../hooks/use-dess-device.ts'
+import { useTranslation } from 'react-i18next';
+import { InverterDashboard } from '../components/dashboard/inverter-dashboard';
+import { useDessDevice } from '../hooks/use-dess-device.ts';
 
 export function DashboardPage() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     loading: deviceLoading,
     error: deviceError,
@@ -16,9 +16,9 @@ export function DashboardPage() {
   } = useDessDevice({
     pollIntervalMs: 30_000,
     enabled: true,
-  })
+  });
 
-  const deviceData = { grid, pv, battery, load, system }
+  const deviceData = { grid, pv, battery, load, system };
 
   return (
     <div>
@@ -35,5 +35,5 @@ export function DashboardPage() {
       )}
       <InverterDashboard data={deviceData} />
     </div>
-  )
+  );
 }

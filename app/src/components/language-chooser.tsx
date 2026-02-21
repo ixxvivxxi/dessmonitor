@@ -1,15 +1,15 @@
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
-const LOCALES = ['en', 'ru'] as const
+const LOCALES = ['en', 'ru'] as const;
 const LOCALE_LABELS: Record<(typeof LOCALES)[number], string> = {
   en: 'EN',
   ru: 'RU',
-}
+};
 
 export function LanguageChooser() {
-  const { i18n } = useTranslation()
-  const current = (i18n.language.startsWith('en') ? 'en' : 'ru') as (typeof LOCALES)[number]
-  const next = current === 'en' ? 'ru' : 'en'
+  const { i18n } = useTranslation();
+  const current = (i18n.language.startsWith('en') ? 'en' : 'ru') as (typeof LOCALES)[number];
+  const next = current === 'en' ? 'ru' : 'en';
 
   return (
     <button
@@ -19,5 +19,5 @@ export function LanguageChooser() {
     >
       {LOCALE_LABELS[current]}
     </button>
-  )
+  );
 }

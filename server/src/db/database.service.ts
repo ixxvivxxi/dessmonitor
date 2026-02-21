@@ -1,7 +1,7 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import * as sqlite3 from 'sqlite3';
-import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import * as sqlite3 from 'sqlite3';
 
 const DATA_DIR = 'data';
 const DB_FILE = 'dessmonitor.db';
@@ -25,7 +25,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   private migrate(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.db!.exec(
+      this.db?.exec(
         `
       CREATE TABLE IF NOT EXISTS latest_data (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -58,29 +58,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   run(sql: string, params: unknown[] = []): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.db!.run(sql, params, (err) => (err ? reject(err) : resolve()));
+      this.db?.run(sql, params, (err) => (err ? reject(err) : resolve()));
     });
   }
 
-  get<T = Record<string, unknown>>(
-    sql: string,
-    params: unknown[] = [],
-  ): Promise<T | undefined> {
+  get<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T | undefined> {
     return new Promise((resolve, reject) => {
-      this.db!.get(sql, params, (err, row) =>
-        err ? reject(err) : resolve(row as T | undefined),
-      );
+      this.db?.get(sql, params, (err, row) => (err ? reject(err) : resolve(row as T | undefined)));
     });
   }
 
-  all<T = Record<string, unknown>>(
-    sql: string,
-    params: unknown[] = [],
-  ): Promise<T[]> {
+  all<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
     return new Promise((resolve, reject) => {
-      this.db!.all(sql, params, (err, rows) =>
-        err ? reject(err) : resolve((rows ?? []) as T[]),
-      );
+      this.db?.all(sql, params, (err, rows) => (err ? reject(err) : resolve((rows ?? []) as T[])));
     });
   }
 

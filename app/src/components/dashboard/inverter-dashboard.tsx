@@ -1,16 +1,16 @@
-import { useTranslation } from 'react-i18next'
-import { BatteryStatus } from './battery-status'
-import { GridCard } from './grid-card'
-import { LoadCard } from './load-card'
-import { PvCard } from './pv-card'
-import type { DeviceData } from '../../hooks/use-dess-device'
+import { useTranslation } from 'react-i18next';
+import type { DeviceData } from '../../hooks/use-dess-device';
+import { BatteryStatus } from './battery-status';
+import { GridCard } from './grid-card';
+import { LoadCard } from './load-card';
+import { PvCard } from './pv-card';
 
 interface InverterDashboardProps {
-  data: DeviceData
+  data: DeviceData;
 }
 
 export function InverterDashboard({ data }: InverterDashboardProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <div className="card card-border bg-base-100 p-3 shadow-sm">
@@ -27,11 +27,7 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <PvCard
-          voltage={data.pv.voltage}
-          power={data.pv.power}
-          status={data.pv.status}
-        />
+        <PvCard voltage={data.pv.voltage} power={data.pv.power} status={data.pv.status} />
         <BatteryStatus
           voltage={data.battery.voltage ?? undefined}
           capacity={data.battery.capacity ?? undefined}
@@ -54,5 +50,5 @@ export function InverterDashboard({ data }: InverterDashboardProps) {
         />
       </div>
     </div>
-  )
+  );
 }

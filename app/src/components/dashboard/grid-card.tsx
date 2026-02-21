@@ -1,16 +1,16 @@
-import { Zap } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { Card, CardBody, CardHeader, CardRow } from '../ui/card'
+import { Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardBody, CardHeader, CardRow } from '../ui/card';
 
 interface GridCardProps {
-  voltage: number | null
-  frequency: number | null
-  status?: string | null
-  inputRange?: string | null
+  voltage: number | null;
+  frequency: number | null;
+  status?: string | null;
+  inputRange?: string | null;
 }
 
 export function GridCard({ voltage, frequency, status, inputRange }: GridCardProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader icon={<Zap className="size-4 shrink-0" aria-hidden />} title={t('grid.title')} />
@@ -31,5 +31,5 @@ export function GridCard({ voltage, frequency, status, inputRange }: GridCardPro
         )}
       </CardBody>
     </Card>
-  )
+  );
 }

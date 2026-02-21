@@ -1,8 +1,8 @@
+import type { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { CredentialsService } from '../credentials/credentials.service';
-import { DatabaseService } from '../db/database.service';
+import type { CredentialsService } from '../credentials/credentials.service';
+import type { DatabaseService } from '../db/database.service';
 
 // Known chart fields from dessmonitor-homeassistant
 const CHART_FIELDS = [
@@ -69,96 +69,67 @@ export class DessmonitorService {
     try {
       this.logger.debug('fetchLatest: fetching');
       const { data } = await firstValueFrom(
-        this.httpService.get<
-          DessmonitorResponse<{ gts: string; pars: LatestDataPars }>
-        >(url),
+        this.httpService.get<DessmonitorResponse<{ gts: string; pars: LatestDataPars }>>(url),
       );
       if (data.err !== 0 || !data.dat) {
-        this.logger.warn(
-          `fetchLatest: API error err=${data.err} desc=${data.desc}`,
-        );
+        this.logger.warn(`fetchLatest: API error err=${data.err} desc=${data.desc}`);
         return false;
       }
       await this.dbService.run(
         'INSERT OR REPLACE INTO latest_data (id, json, gts, fetched_at) VALUES (1, ?, ?, ?)',
-        [
-          JSON.stringify(data.dat.pars ?? {}),
-          data.dat.gts ?? '',
-          Math.floor(Date.now() / 1000),
-        ],
+        [JSON.stringify(data.dat.pars ?? {}), data.dat.gts ?? '', Math.floor(Date.now() / 1000)],
       );
       this.logger.log('fetchLatest: OK');
       return true;
     } catch (e) {
-      this.logger.error(
-        `fetchLatest failed: ${e instanceof Error ? e.message : e}`,
-      );
+      this.logger.error(`fetchLatest failed: ${e instanceof Error ? e.message : e}`);
       return false;
     }
   }
 
-  async fetchChartField(
-    field: string,
-    sdate: string,
-    edate: string,
-  ): Promise<boolean> {
-    const url = this.credentialsService.buildUrl(
-      'queryDeviceChartFieldDetailData',
-      {
-        field,
-        precision: '5',
-        sdate,
-        edate,
-        chartStatus: 'false',
-      },
-    );
+  async fetchChartField(field: string, sdate: string, edate: string): Promise<boolean> {
+    const url = this.credentialsService.buildUrl('queryDeviceChartFieldDetailData', {
+      field,
+      precision: '5',
+      sdate,
+      edate,
+      chartStatus: 'false',
+    });
     if (!url) return false;
     try {
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<ChartDataPoint[]>>(url),
       );
       if (data.err !== 0 || !Array.isArray(data.dat)) {
-        this.logger.debug(
-          `fetchChartField ${field}: API error err=${data.err}`,
-        );
+        this.logger.debug(`fetchChartField ${field}: API error err=${data.err}`);
         return false;
       }
       await this.dbService.transaction(async () => {
         for (const p of data.dat!) {
           await this.dbService.run(
             'INSERT OR REPLACE INTO chart_data (field, ts, val) VALUES (?, ?, ?)',
-            [field, p.key, parseFloat(p.val) || 0],
+            [field, p.key, Number.parseFloat(p.val) || 0],
           );
         }
       });
       this.logger.debug(`fetchChartField ${field}: ${data.dat.length} points`);
       return true;
     } catch (e) {
-      this.logger.warn(
-        `fetchChartField ${field} failed: ${e instanceof Error ? e.message : e}`,
-      );
+      this.logger.warn(`fetchChartField ${field} failed: ${e instanceof Error ? e.message : e}`);
       return false;
     }
   }
 
-  async fetchKeyParameterOneDay(
-    parameter: string,
-    date: string,
-  ): Promise<boolean> {
-    const url = this.credentialsService.buildUrl(
-      'querySPDeviceKeyParameterOneDay',
-      {
-        parameter,
-        date,
-        chartStatus: 'false',
-      },
-    );
+  async fetchKeyParameterOneDay(parameter: string, date: string): Promise<boolean> {
+    const url = this.credentialsService.buildUrl('querySPDeviceKeyParameterOneDay', {
+      parameter,
+      date,
+      chartStatus: 'false',
+    });
     if (!url) return false;
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get<DessmonitorResponse<{ detail: KeyParamPoint[] }>>(
-          url,
-        ),
+        this.httpService.get<DessmonitorResponse<{ detail: KeyParamPoint[] }>>(url),
       );
       const detail = data.dat?.detail;
       if (data.err !== 0 || !detail) {
@@ -171,13 +142,11 @@ export class DessmonitorService {
         for (const p of detail) {
           await this.dbService.run(
             'INSERT OR REPLACE INTO key_param_data (parameter, ts, val) VALUES (?, ?, ?)',
-            [parameter, p.ts, parseFloat(p.val) || 0],
+            [parameter, p.ts, Number.parseFloat(p.val) || 0],
           );
         }
       });
-      this.logger.debug(
-        `fetchKeyParameterOneDay ${parameter} ${date}: ${detail.length} points`,
-      );
+      this.logger.debug(`fetchKeyParameterOneDay ${parameter} ${date}: ${detail.length} points`);
       return true;
     } catch (e) {
       this.logger.warn(
@@ -202,9 +171,7 @@ export class DessmonitorService {
       if (await this.fetchChartField(field, sdate, edate)) ok++;
       await this.sleep(500);
     }
-    this.logger.log(
-      `fetchChartDataForRange: ${ok}/${CHART_FIELDS.length} fields OK`,
-    );
+    this.logger.log(`fetchChartDataForRange: ${ok}/${CHART_FIELDS.length} fields OK`);
   }
 
   /** Fetch key parameters for a given date. */
@@ -217,9 +184,7 @@ export class DessmonitorService {
       if (await this.fetchKeyParameterOneDay(param, dateStr)) ok++;
       await this.sleep(500);
     }
-    this.logger.log(
-      `fetchKeyParamsForDate: ${ok}/${KEY_PARAMETERS.length} params OK`,
-    );
+    this.logger.log(`fetchKeyParamsForDate: ${ok}/${KEY_PARAMETERS.length} params OK`);
   }
 
   private sleep(ms: number): Promise<void> {

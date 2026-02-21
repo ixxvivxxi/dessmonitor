@@ -1,7 +1,7 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, type OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { CredentialsService } from '../credentials/credentials.service';
-import { DessmonitorService } from './dessmonitor.service';
+import type { CredentialsService } from '../credentials/credentials.service';
+import type { DessmonitorService } from './dessmonitor.service';
 
 @Injectable()
 export class DessmonitorScheduler implements OnModuleInit {

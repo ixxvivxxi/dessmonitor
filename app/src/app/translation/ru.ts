@@ -14,8 +14,7 @@ export default {
       resetCredentials: 'Сбросить учётные данные',
       loadingInverterData: 'Загрузка данных инвертора…',
       retry: 'Повторить',
-      urlPlaceholder:
-        'https://web.dessmonitor.com/public/?sign=...&salt=...&token=...',
+      urlPlaceholder: 'https://web.dessmonitor.com/public/?sign=...&salt=...&token=...',
     },
     dashboard: {
       workingState: 'Режим работы',
@@ -112,4 +111,4 @@ export default {
       },
     },
   },
-}
+};

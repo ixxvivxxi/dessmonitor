@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
 import { CredentialsModule } from '../credentials/credentials.module';
-import { DessmonitorService } from './dessmonitor.service';
 import { DessmonitorScheduler } from './dessmonitor.scheduler';
+import { DessmonitorService } from './dessmonitor.service';
 
 @Module({
   imports: [

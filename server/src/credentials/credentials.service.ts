@@ -1,12 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { Injectable } from '@nestjs/common';
 
 export interface StoredCredentials {
   url: string;
@@ -47,14 +41,11 @@ export class CredentialsService {
 
   private readonly defaultBaseUrl = 'https://web.dessmonitor.com/public/';
 
-  parseAndStore(
-    url: string,
-    queryParams?: Record<string, string>,
-  ): StoredCredentials {
+  parseAndStore(url: string, queryParams?: Record<string, string>): StoredCredentials {
     const params: Record<string, string> = {};
     let baseUrl = this.defaultBaseUrl;
 
-    if (url && url.startsWith('http')) {
+    if (url?.startsWith('http')) {
       try {
         const parsed = new URL(url);
         baseUrl = `${parsed.origin}${parsed.pathname}`;
@@ -100,10 +91,7 @@ export class CredentialsService {
     if (existsSync(path)) unlinkSync(path);
   }
 
-  buildUrl(
-    action: string,
-    extraParams?: Record<string, string>,
-  ): string | null {
+  buildUrl(action: string, extraParams?: Record<string, string>): string | null {
     const creds = this.getCredentials();
     if (!creds) return null;
     const params = new URLSearchParams(creds.params);

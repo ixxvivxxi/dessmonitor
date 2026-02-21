@@ -1,19 +1,19 @@
-import { Outlet, Link, useLocation } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
-import { LayoutDashboard, Settings } from 'lucide-react'
-import { Container } from './container.tsx'
-import { TopBar } from './top-bar.tsx'
+import { Link, Outlet, useLocation } from '@tanstack/react-router';
+import { LayoutDashboard, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Container } from './container.tsx';
+import { TopBar } from './top-bar.tsx';
 
 interface AppLayoutProps {
   /** Minimal top bar (name + language chooser only), no nav or logout */
-  minimal?: boolean
+  minimal?: boolean;
   /** Custom content instead of Outlet */
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }
 
 export function AppLayout({ minimal = false, children }: AppLayoutProps) {
-  const { t } = useTranslation()
-  const { pathname } = useLocation()
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
 
   return (
     <div className="flex min-h-screen flex-col bg-base-200">
@@ -44,10 +44,8 @@ export function AppLayout({ minimal = false, children }: AppLayoutProps) {
         )}
       </TopBar>
       <main className="flex flex-1 flex-col">
-        <Container className="flex flex-1 flex-col py-6">
-          {children ?? <Outlet />}
-        </Container>
+        <Container className="flex flex-1 flex-col py-6">{children ?? <Outlet />}</Container>
       </main>
     </div>
-  )
+  );
 }
