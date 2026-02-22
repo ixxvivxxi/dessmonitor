@@ -83,6 +83,7 @@ export default {
           normal: 'Normal',
           fault: 'Fault',
           'PV Undervoltage': 'PV Undervoltage',
+          'PV Discharge': 'PV Discharge',
         },
       },
       load: {

@@ -6,12 +6,12 @@ interface ChartPoint {
   val: number;
 }
 
-/** Data points every 5 minutes: 1h=12, 6h=72, 12h=144, 24h=288 */
+/** Steps back from current (5-min intervals): 1h=12, 6h=72, 12h=144, 24h=287 (288 points => index 0) */
 const INTERVALS = {
-  hour1: 12,
-  hour6: 72,
-  hour12: 144,
-  hour24: 288,
+  hour1: 274,
+  hour6: 214,
+  hour12: 142,
+  hour24: 0,
 } as const;
 
 const FIELD = 'bt_battery_voltage';
@@ -73,13 +73,8 @@ export function useBatteryVoltageChart(pn?: string | null): {
     fetchData();
   }, [fetchData]);
 
-  const points = rawData.filter((p) => !Number.isNaN(p.val) && p.val > 0);
-
-  const voltageAt = (stepsBack: number): number | null => {
-    const idx = points.length - 1 - stepsBack;
-    if (idx < 0) return null;
-    const val = points[idx]?.val;
-    return val != null ? val : null;
+  const voltageAt = (index: number): number | null => {
+    return rawData[index]?.val ?? null;
   };
 
   const voltages = {
@@ -89,7 +84,7 @@ export function useBatteryVoltageChart(pn?: string | null): {
     hour24: voltageAt(INTERVALS.hour24),
   };
 
-  const current = points.length > 0 ? points[points.length - 1]!.val : null;
+  const current = rawData.length > 0 ? rawData[rawData.length - 1]!.val : null;
 
   return { loading, error, refetch: fetchData, voltages, current };
 }

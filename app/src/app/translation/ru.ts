@@ -83,6 +83,7 @@ export default {
           normal: 'Норма',
           fault: 'Ошибка',
           'PV Undervoltage': 'PV пониженное напряжение',
+          'PV Discharge': 'PV разряд',
         },
       },
       load: {

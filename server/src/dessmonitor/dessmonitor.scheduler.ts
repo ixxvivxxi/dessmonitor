@@ -29,8 +29,8 @@ export class DessmonitorScheduler implements OnModuleInit {
     }
   }
 
-  /** Fetch latest device data every 2 minutes */
-  @Cron('*/2 * * * *')
+  /** Fetch latest device data every 1 minute */
+  @Cron('*/1 * * * *')
   async handleLatestFetch(): Promise<void> {
     if (!this.credentialsService.getCredentials()) return;
     const pns = await this.getPnsToFetch();
