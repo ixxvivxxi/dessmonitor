@@ -20,7 +20,7 @@ function DiffFromCurrent({ value, current }: { value: number; current: number })
     <Typography
       variant="xs"
       as="span"
-      className={`ml-1 inline-flex items-center gap-0.5 ${rose ? 'text-success' : 'text-error'}`}
+      className={`ml-1 inline-flex items-center gap-0.5 ${rose ? 'text-success' : 'text-warning'}`}
       title={diff < 0 ? 'Rose since then' : 'Dropped since then'}
     >
       {rose ? (
