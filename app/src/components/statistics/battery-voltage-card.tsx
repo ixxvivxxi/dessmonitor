@@ -29,8 +29,8 @@ function DiffFromCurrent({ value, current }: { value: number; current: number })
         <ArrowDown className="size-4" aria-hidden />
       )}
       <span>
-        {diff > 0 ? '+' : ''}
-        {diff.toFixed(2)}V
+        {diff > 0 ? '-' : diff < 0 ? '+' : ''}
+        {Math.abs(diff).toFixed(2)}V
       </span>
     </Typography>
   );

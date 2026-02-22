@@ -1,9 +1,6 @@
 # --- app (Vite + nginx) ---
 FROM node:24-alpine AS app-builder
 
-# node-sqlite3 (server dep) needs native build during npm ci
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -28,9 +25,6 @@ CMD ["nginx", "-g", "daemon off;"]
 
 # --- server (NestJS) ---
 FROM node:24-alpine AS server
-
-# node-sqlite3 needs native build
-RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
