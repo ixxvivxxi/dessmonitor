@@ -92,23 +92,49 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
           )`,
         );
         await run('CREATE INDEX IF NOT EXISTS idx_chart_pn_field_ts ON chart_data(pn, field, ts)');
-        return;
+      } else if (!(await hasColumn('chart_data', 'pn'))) {
+        await run(`CREATE TABLE chart_data_new (
+          pn TEXT NOT NULL,
+          field TEXT NOT NULL,
+          ts TEXT NOT NULL,
+          val REAL NOT NULL,
+          PRIMARY KEY (pn, field, ts)
+        )`);
+        await run(
+          `INSERT INTO chart_data_new (pn, field, ts, val)
+           SELECT 'default', field, ts, val FROM chart_data`,
+        );
+        await run('DROP TABLE chart_data');
+        await run('ALTER TABLE chart_data_new RENAME TO chart_data');
+        await run('CREATE INDEX IF NOT EXISTS idx_chart_pn_field_ts ON chart_data(pn, field, ts)');
       }
-      if (await hasColumn('chart_data', 'pn')) return;
-      await run(`CREATE TABLE chart_data_new (
-        pn TEXT NOT NULL,
-        field TEXT NOT NULL,
-        ts TEXT NOT NULL,
-        val REAL NOT NULL,
-        PRIMARY KEY (pn, field, ts)
-      )`);
-      await run(
-        `INSERT INTO chart_data_new (pn, field, ts, val)
-         SELECT 'default', field, ts, val FROM chart_data`,
-      );
-      await run('DROP TABLE chart_data');
-      await run('ALTER TABLE chart_data_new RENAME TO chart_data');
-      await run('CREATE INDEX IF NOT EXISTS idx_chart_pn_field_ts ON chart_data(pn, field, ts)');
+
+      // Dedicated tables for output_power, pv_output_power, bt_battery_voltage
+      const dedicatedFields: Array<{ field: string; table: string }> = [
+        { field: 'output_power', table: 'chart_output_power' },
+        { field: 'pv_output_power', table: 'chart_pv_output_power' },
+        { field: 'bt_battery_voltage', table: 'chart_bt_battery_voltage' },
+      ];
+      for (const { field, table } of dedicatedFields) {
+        if (await tableExists(table)) continue;
+        await run(
+          `CREATE TABLE ${table} (
+            pn TEXT NOT NULL,
+            ts TEXT NOT NULL,
+            val REAL NOT NULL,
+            PRIMARY KEY (pn, ts)
+          )`,
+        );
+        await run(`CREATE INDEX IF NOT EXISTS idx_${table}_pn_ts ON ${table}(pn, ts)`);
+        if (await tableExists('chart_data')) {
+          await run(
+            `INSERT OR REPLACE INTO ${table} (pn, ts, val)
+             SELECT pn, ts, val FROM chart_data WHERE field = ?`,
+            [field],
+          );
+          await run('DELETE FROM chart_data WHERE field = ?', [field]);
+        }
+      }
     };
 
     const migrateKeyParamData = async () => {

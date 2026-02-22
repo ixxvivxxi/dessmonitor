@@ -4,19 +4,11 @@ import { DateTime } from 'luxon';
 import { firstValueFrom } from 'rxjs';
 import { CredentialsService } from '../credentials/credentials.service';
 import { DatabaseService } from '../db/database.service';
-
-// Known chart fields from dessmonitor-homeassistant
-const CHART_FIELDS = [
-  'bt_battery_voltage',
-  'bt_battery_capacity',
-  'bt_battery_charging_current',
-  'pv_output_power',
-  'pv_input_voltage',
-  'gd_ac_input_voltage',
-  'gd_ac_input_frequency',
-  'bc_output_apparent_power',
-  'bc_output_voltage',
-] as const;
+import {
+  CHART_FIELDS,
+  CHART_TABLES,
+  type ChartField,
+} from '../data/chart-tables';
 
 // Key parameters for daily aggregation
 const KEY_PARAMETERS = [
@@ -90,22 +82,32 @@ export class DessmonitorService {
     return this.withAuthRetry(doFetch, 'fetchLatest', pn);
   }
 
-  async fetchChartField(pn: string, field: string, sdate: string, edate: string): Promise<boolean> {
-    const doFetch = async (): Promise<boolean> => {
+  /**
+   * Fetch chart field from web.dessmonitor.com.
+   * Only supports output_power, pv_output_power, bt_battery_voltage.
+   * For output_power and pv_output_power, API returns ERR_FORMAT_ERROR when sdate/edate span multiple days; split into per-day requests.
+   */
+  async fetchChartField(
+    pn: string,
+    field: ChartField,
+    sdate: string,
+    edate: string,
+  ): Promise<boolean> {
+    const doFetchOneDay = async (daySdate: string, dayEdate: string): Promise<boolean> => {
       const url = await this.credentialsService.buildUrl(
         'queryDeviceChartFieldDetailData',
         {
           field,
           precision: '5',
-          sdate,
-          edate,
+          sdate: daySdate,
+          edate: dayEdate,
           i18n: 'en_US',
           chartStatus: 'false',
         },
         pn,
       );
       if (!url) return false;
-      this.logger.debug(`fetchChartField pn=${pn} field=${field}`);
+      this.logger.debug(`fetchChartField pn=${pn} field=${field} ${daySdate}..${dayEdate}`);
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<ChartDataPoint[]>>(url, {
           timeout: 45000, // chart API can be slow; default 15s often times out
@@ -114,16 +116,41 @@ export class DessmonitorService {
       if (data.err !== 0 || !Array.isArray(data.dat)) {
         throw new Error(`API error err=${data.err} desc=${data.desc ?? '(none)'}`);
       }
-      await this.dbService.transaction(async () => {
-        for (const p of data.dat!) {
-          await this.dbService.run(
-            'INSERT OR REPLACE INTO chart_data (pn, field, ts, val) VALUES (?, ?, ?, ?)',
-            [pn, field, p.key, Number.parseFloat(p.val) || 0],
-          );
-        }
-      });
+      const table = CHART_TABLES[field as ChartField];
+      const points = data.dat!
+        .filter((p) => p.key != null && String(p.key).trim() !== '')
+        .map((p) => ({
+          ts: p.key!.trim(),
+          val: Number.parseFloat(String(p.val ?? '')) || 0,
+        }));
+      await this.insertChartPoints(table, pn, points);
       this.logger.debug(`fetchChartField ${field}: ${data.dat.length} points`);
       return true;
+    };
+
+    const doFetch = async (): Promise<boolean> => {
+      // web.dessmonitor.com returns ERR_FORMAT_ERROR when sdate/edate span multiple days
+      const perDayFields = ['output_power', 'pv_output_power'];
+      const needsPerDay =
+        perDayFields.includes(field) && sdate.split(' ')[0] !== edate.split(' ')[0];
+      if (needsPerDay) {
+        const startDay = DateTime.fromFormat(sdate.split(' ')[0]!, 'yyyy-MM-dd');
+        const endDay = DateTime.fromFormat(edate.split(' ')[0]!, 'yyyy-MM-dd');
+        let ok = false;
+        for (
+          let d = startDay;
+          d.toMillis() <= endDay.toMillis();
+          d = d.plus({ days: 1 })
+        ) {
+          const dateStr = d.toFormat('yyyy-MM-dd');
+          const daySdate = `${dateStr} 00:00:00`;
+          const dayEdate = `${dateStr} 23:59:59`;
+          if (await doFetchOneDay(daySdate, dayEdate)) ok = true;
+          await this.sleep(500);
+        }
+        return ok;
+      }
+      return doFetchOneDay(sdate, edate);
     };
     return this.withAuthRetry(doFetch, `fetchChartField ${field}`, pn);
   }
@@ -162,42 +189,32 @@ export class DessmonitorService {
     return this.withAuthRetry(doFetch, `fetchKeyParameterOneDay ${parameter} ${date}`, pn);
   }
 
-  /** Fetch chart data for yesterday and today to backfill/keep monthly data current. */
-  async fetchChartDataForRange(pn: string, startDate: Date, endDate: Date): Promise<void> {
-    const sdate = DateTime.fromJSDate(startDate).toFormat('yyyy-MM-dd') + ' 00:00:00';
-    const edate = DateTime.fromJSDate(endDate).toFormat('yyyy-MM-dd') + ' 23:59:59';
-    this.logger.log(`fetchChartDataForRange pn=${pn}: ${sdate} - ${edate}`);
-    let ok = 0;
-    for (const field of CHART_FIELDS) {
-      if (await this.fetchChartField(pn, field, sdate, edate)) ok++;
-      await this.sleep(500);
-    }
-    this.logger.log(`fetchChartDataForRange: ${ok}/${CHART_FIELDS.length} fields OK`);
-  }
-
-  /** Fetch battery voltage chart (bt_battery_voltage) for last 2 days and prune older data.
-   * Dessmonitor API expects one day per request (sdate/edate same day). */
-  async fetchBatteryVoltageChart(pn: string): Promise<void> {
+  /**
+   * Fetch chart data for output_power, pv_output_power, bt_battery_voltage.
+   * Keeps last 2 days in DB; prunes older data.
+   */
+  async fetchChartData(pn: string): Promise<void> {
     const now = DateTime.local();
     const today = now.startOf('day');
     const yesterday = today.minus({ days: 1 });
     let ok = 0;
-    for (const day of [yesterday, today]) {
-      const dateStr = day.toFormat('yyyy-MM-dd');
-      const sdate = `${dateStr} 00:00:00`;
-      const edate = `${dateStr} 23:59:59`;
-      this.logger.log(`fetchBatteryVoltageChart pn=${pn}: ${sdate} - ${edate}`);
-      if (await this.fetchChartField(pn, 'bt_battery_voltage', sdate, edate)) ok++;
-      await this.sleep(500);
+    for (const field of CHART_FIELDS) {
+      for (const day of [yesterday, today]) {
+        const dateStr = day.toFormat('yyyy-MM-dd');
+        const sdate = `${dateStr} 00:00:00`;
+        const edate = `${dateStr} 23:59:59`;
+        if (await this.fetchChartField(pn, field, sdate, edate)) ok++;
+        await this.sleep(500);
+      }
     }
     if (ok > 0) {
       const cutoff = now.minus({ days: 2 }).startOf('day').toFormat('yyyy-MM-dd HH:mm:ss');
-      await this.dbService.run(
-        "DELETE FROM chart_data WHERE pn = ? AND field = 'bt_battery_voltage' AND ts < ?",
-        [pn, cutoff],
-      );
-      this.logger.debug(`fetchBatteryVoltageChart: pruned rows older than ${cutoff}`);
+      for (const table of Object.values(CHART_TABLES)) {
+        await this.dbService.run(`DELETE FROM ${table} WHERE pn = ? AND ts < ?`, [pn, cutoff]);
+      }
+      this.logger.debug(`fetchChartData: pruned rows older than ${cutoff}`);
     }
+    this.logger.log(`fetchChartData pn=${pn}: ${ok} fetches OK`);
   }
 
   /** Fetch key parameters for a given date. */
@@ -210,6 +227,27 @@ export class DessmonitorService {
       await this.sleep(500);
     }
     this.logger.log(`fetchKeyParamsForDate: ${ok}/${KEY_PARAMETERS.length} params OK`);
+  }
+
+  /** Insert chart points in batch. */
+  private async insertChartPoints(
+    table: string,
+    pn: string,
+    points: Array<{ ts: string; val: number }>,
+  ): Promise<void> {
+    if (points.length === 0) return;
+    const BATCH = 100;
+    await this.dbService.transaction(async () => {
+      for (let i = 0; i < points.length; i += BATCH) {
+        const chunk = points.slice(i, i + BATCH);
+        const placeholders = chunk.map(() => '(?, ?, ?)').join(', ');
+        const params = chunk.flatMap((p) => [pn, p.ts, p.val]);
+        await this.dbService.run(
+          `INSERT OR REPLACE INTO ${table} (pn, ts, val) VALUES ${placeholders}`,
+          params,
+        );
+      }
+    });
   }
 
   private sleep(ms: number): Promise<void> {

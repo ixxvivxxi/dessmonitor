@@ -25,11 +25,11 @@ export class DessmonitorScheduler implements OnModuleInit {
     const pns = await this.getPnsToFetch();
     for (const pn of pns) {
       void this.dessmonitorService.fetchLatest(pn);
-      void this.dessmonitorService.fetchBatteryVoltageChart(pn);
+      void this.dessmonitorService.fetchChartData(pn);
     }
   }
 
-  /** Fetch latest device data every 5 minutes (for each device in DB) */
+  /** Fetch latest device data every 2 minutes */
   @Cron('*/2 * * * *')
   async handleLatestFetch(): Promise<void> {
     if (!this.credentialsService.getCredentials()) return;
@@ -39,29 +39,13 @@ export class DessmonitorScheduler implements OnModuleInit {
     }
   }
 
-  /** Fetch battery voltage chart every 5 minutes; keep last 2 days in DB */
+  /** Fetch chart data (output_power, pv_output_power, bt_battery_voltage) every 5 minutes; keep last 2 days in DB */
   @Cron('*/5 * * * *')
-  async handleBatteryVoltageChartFetch(): Promise<void> {
+  async handleChartFetch(): Promise<void> {
     if (!this.credentialsService.getCredentials()) return;
     const pns = await this.getPnsToFetch();
     for (const pn of pns) {
-      await this.dessmonitorService.fetchBatteryVoltageChart(pn);
-    }
-  }
-
-  /** Fetch chart field detail data once per day for yesterday and today */
-  @Cron('0 0 * * *')
-  async handleDailyChartFetch(): Promise<void> {
-    if (!this.credentialsService.getCredentials()) return;
-    const pns = await this.getPnsToFetch();
-    const today = DateTime.local().startOf('day');
-    const yesterday = today.minus({ days: 1 });
-    for (const pn of pns) {
-      await this.dessmonitorService.fetchChartDataForRange(
-        pn,
-        yesterday.toJSDate(),
-        today.toJSDate(),
-      );
+      await this.dessmonitorService.fetchChartData(pn);
     }
   }
 

@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { CredentialsService } from '../credentials/credentials.service';
+import { CHART_FIELDS, CHART_POINTS_24H, isSupportedChartField } from './chart-tables';
 import { DataService } from './data.service';
 
 function formatDatetime(dt: DateTime): string {
@@ -38,10 +39,15 @@ export class DataController {
     const resolved = pn?.trim() || (await this.resolveDefaultPn());
     if (!resolved) return { error: 'pn (device product number) is required' };
     if (!field) return { error: 'field is required' };
+    if (!isSupportedChartField(field)) {
+      return { error: `field must be one of: ${CHART_FIELDS.join(', ')}` };
+    }
     const now = DateTime.now();
-    const startDate = start ?? formatDatetime(now.minus({ days: 2 }).startOf('day'));
-    const endDate = end ?? formatDatetime(now.endOf('day'));
-    return this.dataService.getChartData(resolved, field, startDate, endDate);
+    const hasDates = Boolean(start?.trim() && end?.trim());
+    const startDate = start?.trim() ?? formatDatetime(now.minus({ hours: 24 }));
+    const endDate = end?.trim() ?? formatDatetime(now);
+    const limit = hasDates ? undefined : CHART_POINTS_24H;
+    return this.dataService.getChartData(resolved, field, startDate, endDate, limit);
   }
 
   @Get('key-param')

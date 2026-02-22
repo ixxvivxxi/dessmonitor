@@ -158,7 +158,7 @@ describe('DessmonitorService', () => {
       );
 
       expect(result).toBe(true);
-      expect(dbService.run).toHaveBeenCalledTimes(2);
+      expect(dbService.run).toHaveBeenCalledTimes(1); // batch insert
       expect(dbService.transaction).toHaveBeenCalledTimes(1);
     });
   });

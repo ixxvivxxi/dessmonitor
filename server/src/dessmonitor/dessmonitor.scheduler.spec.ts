@@ -16,8 +16,7 @@ describe('DessmonitorScheduler', () => {
 
   const mockDessmonitorService = {
     fetchLatest: jest.fn().mockResolvedValue(true),
-    fetchBatteryVoltageChart: jest.fn().mockResolvedValue(undefined),
-    fetchChartDataForRange: jest.fn().mockResolvedValue(undefined),
+    fetchChartData: jest.fn().mockResolvedValue(undefined),
     fetchKeyParamsForDate: jest.fn().mockResolvedValue(undefined),
   };
 
@@ -48,7 +47,7 @@ describe('DessmonitorScheduler', () => {
       expect(mockCredentialsService.ensureCredentialsFromEnv).toHaveBeenCalled();
     });
 
-    it('fetches latest and battery chart for each device from getDevices', async () => {
+    it('fetches latest and chart data for each device from getDevices', async () => {
       mockCredentialsService.getDevices.mockResolvedValue([
         { pn: 'DEV1', sn: 'S1', devcode: '2477', devaddr: '5' },
         { pn: 'DEV2', sn: 'S2', devcode: '2477', devaddr: '6' },
@@ -58,8 +57,8 @@ describe('DessmonitorScheduler', () => {
 
       expect(mockDessmonitorService.fetchLatest).toHaveBeenCalledWith('DEV1');
       expect(mockDessmonitorService.fetchLatest).toHaveBeenCalledWith('DEV2');
-      expect(mockDessmonitorService.fetchBatteryVoltageChart).toHaveBeenCalledWith('DEV1');
-      expect(mockDessmonitorService.fetchBatteryVoltageChart).toHaveBeenCalledWith('DEV2');
+      expect(mockDessmonitorService.fetchChartData).toHaveBeenCalledWith('DEV1');
+      expect(mockDessmonitorService.fetchChartData).toHaveBeenCalledWith('DEV2');
     });
 
     it('uses creds.params.pn when devices is empty', async () => {
@@ -71,7 +70,7 @@ describe('DessmonitorScheduler', () => {
       await scheduler.onModuleInit();
 
       expect(mockDessmonitorService.fetchLatest).toHaveBeenCalledWith('LEGACY_PN');
-      expect(mockDessmonitorService.fetchBatteryVoltageChart).toHaveBeenCalledWith('LEGACY_PN');
+      expect(mockDessmonitorService.fetchChartData).toHaveBeenCalledWith('LEGACY_PN');
     });
   });
 
@@ -96,38 +95,24 @@ describe('DessmonitorScheduler', () => {
     });
   });
 
-  describe('handleBatteryVoltageChartFetch', () => {
+  describe('handleChartFetch', () => {
     it('skips when no credentials', async () => {
       mockCredentialsService.getCredentials.mockReturnValue(null);
 
-      await scheduler.handleBatteryVoltageChartFetch();
+      await scheduler.handleChartFetch();
 
-      expect(mockDessmonitorService.fetchBatteryVoltageChart).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('handleDailyChartFetch', () => {
-    it('skips when no credentials', async () => {
-      mockCredentialsService.getCredentials.mockReturnValue(null);
-
-      await scheduler.handleDailyChartFetch();
-
-      expect(mockDessmonitorService.fetchChartDataForRange).not.toHaveBeenCalled();
+      expect(mockDessmonitorService.fetchChartData).not.toHaveBeenCalled();
     });
 
-    it('fetches chart data for yesterday and today for each device', async () => {
+    it('fetches chart data for each device', async () => {
       mockCredentialsService.getCredentials.mockReturnValue({ params: {} });
       mockCredentialsService.getDevices.mockResolvedValue([
         { pn: 'DEV1', sn: 'S1', devcode: '2477', devaddr: '5' },
       ]);
 
-      await scheduler.handleDailyChartFetch();
+      await scheduler.handleChartFetch();
 
-      expect(mockDessmonitorService.fetchChartDataForRange).toHaveBeenCalledWith(
-        'DEV1',
-        expect.any(Date),
-        expect.any(Date),
-      );
+      expect(mockDessmonitorService.fetchChartData).toHaveBeenCalledWith('DEV1');
     });
   });
 

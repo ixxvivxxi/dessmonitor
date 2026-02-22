@@ -53,6 +53,8 @@ export default {
     },
     statistics: {
       title: 'Battery Voltage Statistics',
+      generated24h: 'Generated (24h)',
+      consumed24h: 'Consumed (24h)',
       last1h: 'Last 1 hour',
       last6h: 'Last 6 hours',
       last12h: 'Last 12 hours',

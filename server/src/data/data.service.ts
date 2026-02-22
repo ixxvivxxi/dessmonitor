@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../db/database.service';
 import { DessmonitorService } from '../dessmonitor/dessmonitor.service';
+import { type ChartField, getChartTable } from './chart-tables';
+
+export type ChartPoint = { ts: string; val: number };
 
 @Injectable()
 export class DataService {
@@ -61,13 +64,22 @@ export class DataService {
     field: string,
     start: string,
     end: string,
-  ): Promise<Array<{ ts: string; val: number }>> {
-    const rows = await this.dbService.all<{ ts: string; val: number }>(
-      'SELECT ts, val FROM chart_data WHERE pn = ? AND field = ? AND ts >= ? AND ts <= ? ORDER BY ts',
-      [pn, field, start, end],
-    );
+    limit?: number,
+  ): Promise<ChartPoint[]> {
+    const table = getChartTable(field);
+    if (!table) return [];
+    const query = `SELECT ts, val FROM ${table} WHERE pn = ? AND ts >= ? AND ts <= ? ORDER BY ts`;
+    const params = [pn, start, end];
+
+    let rows = await this.dbService.all<{ ts: string; val: number }>(query, params);
     if (rows.length === 0) {
-      void this.dessmonitorService.fetchChartField(pn, field, start, end);
+      const ok = await this.dessmonitorService.fetchChartField(pn, field as ChartField, start, end);
+      if (ok) {
+        rows = await this.dbService.all<{ ts: string; val: number }>(query, params);
+      }
+    }
+    if (limit != null && rows.length > limit) {
+      rows = rows.slice(-limit); // most recent N points
     }
     return rows;
   }
