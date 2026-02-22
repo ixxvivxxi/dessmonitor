@@ -1,0 +1,42 @@
+---
+description: Add or update tests after backend changes
+globs: server/**/*.ts
+alwaysApply: false
+---
+
+# Backend Tests
+
+**After changing server code, add or update tests.**
+
+- Tests: `server/src/**/*.spec.ts` (colocated with source)
+- Run: `npm run test` (in repo root) or `npm run test --workspace=server`
+
+**When to add tests:**
+- New service, controller, or module → add a `*.spec.ts` file
+- Changed logic in existing file → update or add test cases
+- Bug fix → add a regression test
+
+**NestJS testing pattern:**
+```typescript
+import { Test, type TestingModule } from '@nestjs/testing';
+import { MyService } from './my.service';
+
+describe('MyService', () => {
+  let service: MyService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [MyService /* mock deps with { provide: X, useValue: mockX } */],
+    }).compile();
+
+    service = module.get<MyService>(MyService);
+  });
+
+  it('should do something', () => {
+    expect(service.doSomething()).toBe(expected);
+  });
+});
+```
+
+- Use `useValue` or `useFactory` to mock dependencies
+- Run `npm run test` before committing

@@ -151,6 +151,70 @@ export class CredentialsService {
     return stored;
   }
 
+  /** Whether env vars for auto-login are set (DESS_USR, DESS_PWD, DESS_COMPANY_KEY). */
+  hasEnvCredentials(): boolean {
+    const usr = process.env.DESS_USR;
+    const pwd = process.env.DESS_PWD;
+    const companyKey = process.env.DESS_COMPANY_KEY;
+    return !!(usr && pwd && companyKey);
+  }
+
+  /**
+   * Relogin from env and overwrite stored credentials. Use on auth errors when env creds exist.
+   * Preserves device params (pn, sn, etc.) from existing creds; only refreshes token/secret.
+   */
+  async reloginFromEnv(): Promise<boolean> {
+    if (!this.hasEnvCredentials()) return false;
+    const usr = process.env.DESS_USR!;
+    const pwd = process.env.DESS_PWD!;
+    const companyKey = process.env.DESS_COMPANY_KEY!;
+    try {
+      const { token, secret, baseUrl } = await this.authService.login(usr, pwd, companyKey);
+      const creds = this.getCredentials();
+      let extraParams: Record<string, string> = {};
+      if (creds?.params) {
+        const { pn, sn, devcode, devaddr } = creds.params;
+        if (pn) extraParams.pn = pn;
+        if (sn) extraParams.sn = sn;
+        if (devcode) extraParams.devcode = devcode;
+        if (devaddr) extraParams.devaddr = devaddr;
+      }
+      if (Object.keys(extraParams).length === 0) {
+        const pn = process.env.DESS_PN;
+        const sn = process.env.DESS_SN;
+        const devcode = process.env.DESS_DEVCODE;
+        const devaddr = process.env.DESS_DEVADDR;
+        if (pn) extraParams.pn = pn;
+        if (sn) extraParams.sn = sn;
+        if (devcode) extraParams.devcode = devcode;
+        if (devaddr) extraParams.devaddr = devaddr;
+      }
+      if (Object.keys(extraParams).length === 0) {
+        try {
+          const devices = await this.authService.getDevices(token, secret, baseUrl);
+          await this.saveDevices(devices);
+          const first = devices[0];
+          if (first) extraParams = first;
+        } catch (e) {
+          this.logger.debug(
+            `reloginFromEnv getDevices skipped: ${e instanceof Error ? e.message : e}`,
+          );
+        }
+      }
+      this.storeFromLogin(
+        token,
+        secret,
+        baseUrl,
+        Object.keys(extraParams).length > 0 ? extraParams : undefined,
+      );
+      this.logger.log('Relogin from env: credentials refreshed');
+      return true;
+    } catch (e) {
+      this.logger.warn(`Relogin from env failed: ${e instanceof Error ? e.message : e}`);
+      return false;
+    }
+  }
+
   /**
    * If DESS_USR, DESS_PWD, DESS_COMPANY_KEY env vars are set and no credentials exist,
    * login and store. Call on startup for Docker / .env flow.

@@ -63,23 +63,22 @@ export class DessmonitorService {
   ) {}
 
   async fetchLatest(pn: string): Promise<boolean> {
-    const url = await this.credentialsService.buildUrl(
-      'querySPDeviceLastData',
-      { i18n: 'en_US' },
-      pn,
-    );
-    if (!url) {
-      this.logger.warn('fetchLatest: no credentials or device');
-      return false;
-    }
-    try {
+    const doFetch = async (): Promise<boolean> => {
+      const url = await this.credentialsService.buildUrl(
+        'querySPDeviceLastData',
+        { i18n: 'en_US' },
+        pn,
+      );
+      if (!url) {
+        this.logger.warn('fetchLatest: no credentials or device');
+        return false;
+      }
       this.logger.debug(`fetchLatest: fetching pn=${pn}`);
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<{ gts: string; pars: LatestDataPars }>>(url),
       );
       if (data.err !== 0 || !data.dat) {
-        this.logger.warn(`fetchLatest: API error err=${data.err} desc=${data.desc}`);
-        return false;
+        throw new Error(`API error err=${data.err} desc=${data.desc ?? ''}`);
       }
       await this.dbService.run(
         'INSERT OR REPLACE INTO latest_data (pn, json, gts, fetched_at) VALUES (?, ?, ?, ?)',
@@ -87,38 +86,33 @@ export class DessmonitorService {
       );
       this.logger.log(`fetchLatest: OK pn=${pn}`);
       return true;
-    } catch (e) {
-      this.logger.error(`fetchLatest failed: ${e instanceof Error ? e.message : e}`);
-      return false;
-    }
+    };
+    return this.withAuthRetry(doFetch, 'fetchLatest', pn);
   }
 
   async fetchChartField(pn: string, field: string, sdate: string, edate: string): Promise<boolean> {
-    const url = await this.credentialsService.buildUrl(
-      'queryDeviceChartFieldDetailData',
-      {
-        field,
-        precision: '5',
-        sdate,
-        edate,
-        i18n: 'en_US',
-        chartStatus: 'false',
-      },
-      pn,
-    );
-    if (!url) return false;
-    this.logger.debug(`fetchChartField pn=${pn} field=${field}`);
-    try {
+    const doFetch = async (): Promise<boolean> => {
+      const url = await this.credentialsService.buildUrl(
+        'queryDeviceChartFieldDetailData',
+        {
+          field,
+          precision: '5',
+          sdate,
+          edate,
+          i18n: 'en_US',
+          chartStatus: 'false',
+        },
+        pn,
+      );
+      if (!url) return false;
+      this.logger.debug(`fetchChartField pn=${pn} field=${field}`);
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<ChartDataPoint[]>>(url, {
           timeout: 45000, // chart API can be slow; default 15s often times out
         }),
       );
       if (data.err !== 0 || !Array.isArray(data.dat)) {
-        this.logger.debug(
-          `fetchChartField ${field}: API error err=${data.err} desc=${data.desc ?? '(none)'}`,
-        );
-        return false;
+        throw new Error(`API error err=${data.err} desc=${data.desc ?? '(none)'}`);
       }
       await this.dbService.transaction(async () => {
         for (const p of data.dat!) {
@@ -130,34 +124,29 @@ export class DessmonitorService {
       });
       this.logger.debug(`fetchChartField ${field}: ${data.dat.length} points`);
       return true;
-    } catch (e) {
-      this.logger.warn(`fetchChartField ${field} failed: ${e instanceof Error ? e.message : e}`);
-      return false;
-    }
+    };
+    return this.withAuthRetry(doFetch, `fetchChartField ${field}`, pn);
   }
 
   async fetchKeyParameterOneDay(pn: string, parameter: string, date: string): Promise<boolean> {
-    const url = await this.credentialsService.buildUrl(
-      'querySPDeviceKeyParameterOneDay',
-      {
-        parameter,
-        date,
-        i18n: 'en_US',
-        chartStatus: 'false',
-      },
-      pn,
-    );
-    if (!url) return false;
-    try {
+    const doFetch = async (): Promise<boolean> => {
+      const url = await this.credentialsService.buildUrl(
+        'querySPDeviceKeyParameterOneDay',
+        {
+          parameter,
+          date,
+          i18n: 'en_US',
+          chartStatus: 'false',
+        },
+        pn,
+      );
+      if (!url) return false;
       const { data } = await firstValueFrom(
         this.httpService.get<DessmonitorResponse<{ detail: KeyParamPoint[] }>>(url),
       );
       const detail = data.dat?.detail;
       if (data.err !== 0 || !detail) {
-        this.logger.debug(
-          `fetchKeyParameterOneDay ${parameter} ${date}: API error err=${data.err}`,
-        );
-        return false;
+        throw new Error(`API error err=${data.err}`);
       }
       await this.dbService.transaction(async () => {
         for (const p of detail) {
@@ -169,12 +158,8 @@ export class DessmonitorService {
       });
       this.logger.debug(`fetchKeyParameterOneDay ${parameter} ${date}: ${detail.length} points`);
       return true;
-    } catch (e) {
-      this.logger.warn(
-        `fetchKeyParameterOneDay ${parameter} ${date} failed: ${e instanceof Error ? e.message : e}`,
-      );
-      return false;
-    }
+    };
+    return this.withAuthRetry(doFetch, `fetchKeyParameterOneDay ${parameter} ${date}`, pn);
   }
 
   /** Fetch chart data for yesterday and today to backfill/keep monthly data current. */
@@ -229,5 +214,35 @@ export class DessmonitorService {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+  /**
+   * Execute a fetch operation; on failure, relogin from env (if available) and retry once.
+   * Only relogins when DESS_USR, DESS_PWD, DESS_COMPANY_KEY are set.
+   */
+  private async withAuthRetry(
+    op: () => Promise<boolean>,
+    label: string,
+    pn: string,
+  ): Promise<boolean> {
+    try {
+      return await op();
+    } catch (e) {
+      if (
+        this.credentialsService.hasEnvCredentials() &&
+        (await this.credentialsService.reloginFromEnv())
+      ) {
+        try {
+          return await op();
+        } catch (retryErr) {
+          this.logger.warn(
+            `${label} retry failed (pn=${pn}): ${retryErr instanceof Error ? retryErr.message : retryErr}`,
+          );
+          return false;
+        }
+      }
+      this.logger.warn(`${label} failed (pn=${pn}): ${e instanceof Error ? e.message : e}`);
+      return false;
+    }
   }
 }
