@@ -1,6 +1,8 @@
 # Dessmonitor
 
-Dashboard for monitoring DESS devices (grid, solar, battery, load) via [dessmonitor.com](https://dessmonitor.com).
+Dashboard for monitoring DESS devices (grid, solar, battery, load) via [dessmonitor.com](https://dessmonitor.com). The goal is to see your solar inverter status immediately—the dessmonitor website is often slow. Data is automatically downloaded from dessmonitor and stored in a local database, so the app can show it right away instead of waiting on the remote site.
+
+![Dessmonitor dashboard](screenshot.png)
 
 ## Stack
 
@@ -62,4 +64,4 @@ On startup, if no credentials exist, the server logs in via `authSource`, fetche
 
 ## License
 
-Private.
+MIT.
